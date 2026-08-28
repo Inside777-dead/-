@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ-панель</title>
+<style>
+  :root{--bg:#06050a; --panel:#17151f; --gold:#e8b64c; --red:#d81e2c; --green:#1f9d55; --text:#f4f0e6;}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:Arial,Helvetica,sans-serif; padding:16px;}
+  h1{color:var(--gold); font-size:20px; text-align:center;}
+  .card{background:var(--panel); border:1px solid #2c2735; border-radius:12px; padding:16px; max-width:480px; margin:0 auto 14px;}
+  input{width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #443f52; background:#0e0c14; color:var(--text);}
+  button{width:100%; padding:11px; margin-top:6px; border:none; border-radius:8px; background:var(--gold); color:#2a1b06; font-weight:bold; cursor:pointer;}
+  button.danger{background:var(--red); color:#fff;}
+  .out{font-size:13px; color:#9a94a8; margin-top:8px; white-space:pre-wrap;}
+  .notif{border-bottom:1px solid #2a2534; padding:8px 0; display:flex; justify-content:space-between; gap:8px; font-size:13px;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<h1>🔑 Панель владельца</h1>
+
+<div id="gate" class="card">
+  <label>Ключ владельца (OWNER_KEY)</label>
+  <input id="ownerKey" type="password" placeholder="Твой секретный ключ">
+  <button id="enterBtn">Войти</button>
+</div>
+
+<div id="panel" class="hidden">
+
+  <div class="card">
+    <h3>Создать аккаунт</h3>
+    <input id="createNick" placeholder="Ник игрока">
+    <button id="createBtn">Создать и получить ID</button>
+    <div class="out" id="createOut"></div>
+  </div>
+
+  <div class="card">
+    <h3>Удалить аккаунт</h3>
+    <input id="deleteId" placeholder="ID игрока">
+    <button class="danger" id="deleteBtn">Удалить</button>
+    <div class="out" id="deleteOut"></div>
+  </div>
+
+  <div class="card">
+    <h3>Выдать / списать монеты</h3>
+    <input id="giveId" placeholder="ID игрока">
+    <input id="giveAmount" type="number" placeholder="Количество (отрицательное — списать)">
+    <button id="giveBtn">Применить</button>
+    <div class="out" id="giveOut"></div>
+  </div>
+
+  <div class="card">
+    <h3>Уведомления о выводах</h3>
+    <button id="refreshNotif">Обновить</button>
+    <div id="notifList"></div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = 'https://casino-api.dedcount.workers.dev';
+  const $ = (s) => document.querySelector(s);
+  let ownerKey = '';
+
+  async function adminApi(path, opts = {}) {
+    const res = await fetch(API_BASE + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey, ...(opts.headers || {}) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка');
+    return data;
+  }
+
+  $('#enterBtn').addEventListener('click', async () => {
+    ownerKey = $('#ownerKey').value;
+    try {
+      await adminApi('/admin/notifications');
+      $('#gate').classList.add('hidden');
+      $('#panel').classList.remove('hidden');
+      loadNotifications();
+    } catch (e) {
+      alert('Неверный ключ или Worker недоступен: ' + e.message);
+    }
+  });
+
+  $('#createBtn').addEventListener('click', async () => {
+    try {
+      const r = await adminApi('/admin/create', { method: 'POST', body: JSON.stringify({ nickname: $('#createNick').value.trim() }) });
+      $('#createOut').textContent = `Готово! Ник: ${r.nickname}\nID: ${r.id}\n(передай этот ID игроку)`;
+    } catch (e) { $('#createOut').textContent = 'Ошибка: ' + e.message; }
+  });
+
+  $('#deleteBtn').addEventListener('click', async () => {
+    try {
+      await adminApi('/admin/delete', { method: 'POST', body: JSON.stringify({ id: $('#deleteId').value.trim() }) });
+      $('#deleteOut').textContent = 'Удалено.';
+    } catch (e) { $('#deleteOut').textContent = 'Ошибка: ' + e.message; }
+  });
+
+  $('#giveBtn').addEventListener('click', async () => {
+    try {
+      const r = await adminApi('/admin/give', {
+        method: 'POST',
+        body: JSON.stringify({ id: $('#giveId').value.trim(), amount: Number($('#giveAmount').value) }),
+      });
+      $('#giveOut').textContent = `Новый баланс: ${r.newBalance}`;
+    } catch (e) { $('#giveOut').textContent = 'Ошибка: ' + e.message; }
+  });
+
+  async function loadNotifications(){
+    const list = await adminApi('/admin/notifications');
+    $('#notifList').innerHTML = list.map(n => `
+      <div class="notif">
+        <span>${n.message}<br><small>${n.created_at}</small></span>
+        <button class="danger" style="width:auto; padding:6px 10px;" onclick="deleteNotif(${n.id})">✕</button>
+      </div>
+    `).join('') || '<div class="out">Пусто</div>';
+  }
+  window.deleteNotif = async (id) => {
+    await adminApi('/admin/notifications/' + id, { method: 'DELETE' });
+    loadNotifications();
+  };
+  $('#refreshNotif').addEventListener('click', loadNotifications);
+</script>
+
+</body>
+</html>

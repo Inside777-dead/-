@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jackpot Roulette</title>
+<style>
+  :root{
+    --bg:#06050a; --panel:#17151f; --panel2:#211d29;
+    --gold:#e8b64c; --gold-bright:#ffe08a;
+    --red:#d81e2c; --green:#1f9d55; --text:#f4f0e6; --muted:#9a94a8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:
+      radial-gradient(ellipse 900px 500px at 50% 0%, rgba(232,182,76,0.10), transparent 60%),
+      var(--bg);
+    color:var(--text); font-family:Arial,Helvetica,sans-serif;
+  }
+  header{
+    text-align:center; padding:26px 14px 10px;
+    position:relative;
+  }
+  .marquee{
+    display:inline-block; position:relative;
+    font-family:'Arial Black',Impact,sans-serif; font-size:clamp(20px,6vw,34px);
+    letter-spacing:3px; color:var(--gold-bright);
+    text-shadow:0 0 6px var(--gold), 0 0 18px rgba(232,182,76,.7), 0 0 34px rgba(232,182,76,.35);
+    animation:flicker 3.4s infinite;
+  }
+  @keyframes flicker{0%,19%,21%,23%,80%,100%{opacity:1;}20%,22%,81%{opacity:.55;}}
+  .spark{position:absolute; width:4px; height:4px; border-radius:50%; background:var(--gold-bright);
+    box-shadow:0 0 6px 2px var(--gold-bright); animation:spark 2.6s infinite;}
+  @keyframes spark{0%{opacity:0; transform:scale(.3);}50%{opacity:1; transform:scale(1);}100%{opacity:0; transform:translateY(-14px) scale(.2);}}
+
+  nav{display:flex; justify-content:center; gap:8px; flex-wrap:wrap; padding:10px 8px 20px;}
+  nav button{
+    background:var(--panel); color:var(--text); border:1px solid #3a3546; border-radius:20px;
+    padding:9px 16px; font-size:13px; cursor:pointer;
+  }
+  nav button.active{background:var(--gold); color:#2a1b06; border-color:var(--gold); font-weight:bold;}
+
+  .wrap{max-width:520px; margin:0 auto; padding:0 14px 60px;}
+  .card{background:var(--panel); border:1px solid #2c2735; border-radius:14px; padding:18px; margin-bottom:14px;}
+  .row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #2a2534;}
+  .row:last-child{border-bottom:none;}
+  .muted{color:var(--muted); font-size:13px;}
+  .big{font-size:22px; font-weight:bold;}
+  .plus{color:var(--green);} .minus{color:var(--red);}
+
+  button.action{
+    width:100%; margin-top:8px; padding:12px; border:none; border-radius:10px;
+    background:linear-gradient(180deg,#ffb0b0,var(--red) 55%,#7a0f18); color:#fff; font-weight:bold;
+    cursor:pointer;
+  }
+  button.action.secondary{background:linear-gradient(180deg,#a8f0c6,var(--green) 55%,#0f5c30); color:#062;}
+  button.action:disabled{filter:grayscale(.6); opacity:.6; cursor:not-allowed;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;}
+  .modal{background:var(--panel2); border:1px solid var(--gold); border-radius:14px; padding:22px; max-width:360px; width:100%;}
+  .modal input{width:100%; padding:10px; margin:6px 0 12px; border-radius:8px; border:1px solid #443f52; background:#0e0c14; color:var(--text);}
+  .hidden{display:none !important;}
+
+  .user-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #2a2534;}
+  .disclaimer{font-size:12px; color:var(--muted); text-align:center; padding:20px 20px 40px; line-height:1.6;}
+  .faq h3{color:var(--gold-bright); margin-bottom:4px;}
+  .faq p{color:#cfc9db; font-size:14px; margin-top:0; line-height:1.5;}
+  #err{color:var(--red); font-size:13px; min-height:16px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marquee">★ JACKPOT ROULETTE ★
+    <span class="spark" style="top:-6px;left:10%;animation-delay:.2s"></span>
+    <span class="spark" style="top:60%;left:92%;animation-delay:1s"></span>
+    <span class="spark" style="top:10%;left:80%;animation-delay:1.8s"></span>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="profile" class="active">Профиль</button>
+  <button data-tab="users">Пользователи</button>
+  <button data-tab="games">Игры</button>
+  <button data-tab="faq">FAQ</button>
+  <button id="logoutBtn">Выйти</button>
+</nav>
+
+<div class="wrap">
+
+  <div id="tab-profile" class="tab">
+    <div class="card" style="text-align:center;">
+      <div class="marquee" style="font-size:20px;" id="profileNick">—</div>
+    </div>
+    <div class="card">
+      <div class="row"><span class="muted">Баланс</span><span class="big" id="pBalance">0 🪙</span></div>
+      <div class="row"><span class="muted">Побед</span><span id="pWins">0</span></div>
+      <div class="row"><span class="muted">Поражений</span><span id="pLosses">0</span></div>
+      <div class="row"><span class="muted">Итог по ставкам</span><span class="big" id="pNet">$0</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><span class="muted">Монеты лудомана</span><span class="big" id="pLudoman">0</span></div>
+      <button class="action secondary" id="claimBtn">Забрать монету лудомана (раз в 24ч)</button>
+      <div class="muted" id="claimNote" style="margin-top:6px;"></div>
+    </div>
+    <div class="card">
+      <button class="action" id="withdrawBtn">Вывести обычные монеты</button>
+      <button class="action" id="withdrawLudomanBtn">Вывести монеты лудомана</button>
+      <div class="muted" style="margin-top:6px;">Вывод монет лудомана доступен только после хотя бы одной ставки в любой игре.</div>
+    </div>
+  </div>
+
+  <div id="tab-users" class="tab hidden">
+    <div class="card"><div id="usersList">Загрузка…</div></div>
+  </div>
+
+  <div id="tab-games" class="tab hidden">
+    <div class="card" style="text-align:center;">
+      🎰 Игры скоро появятся здесь: Рулетка, One or Zero, Blackjack (игрок против игрока).
+    </div>
+  </div>
+
+  <div id="tab-faq" class="tab hidden faq">
+    <div class="card">
+      <h3>Это виртуальная валюта</h3>
+      <p>Все монеты, ставки и выигрыши на этом сайте — виртуальные игровые единицы. Настоящие деньги нигде не используются, не принимаются и не выводятся. Сайт не побуждает и не поощряет азартные игры на реальные деньги.</p>
+    </div>
+    <div class="card">
+      <h3>Рулетка</h3>
+      <p>Ставка на число — выплата x36. Цвет (red/black), чёт/нечет, половина 1-18/19-36 — x2. Дюжина, колонка — x3. Зеро (0) — выигрывает только ставка на само число 0.</p>
+    </div>
+    <div class="card">
+      <h3>One or Zero</h3>
+      <p>Выбираешь 1 или 0, крутится барабан. Угадал — забираешь x2 от ставки.</p>
+    </div>
+    <div class="card">
+      <h3>Blackjack (без крупье)</h3>
+      <p>Играется только против другого игрока сайта. Отправляешь вызов из профиля — у соперника 5 минут принять или отклонить.</p>
+    </div>
+    <div class="card">
+      <h3>Ставки</h3>
+      <p>Минимум 1 монета, максимум 10 за раз в обычном режиме, либо диапазон 25–50 монет. Все игры — честный случайный результат без подкруток.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="disclaimer">
+  ⚠️ Все игры на этом сайте виртуальные. Реальные деньги не используются и не выводятся. Администрация сайта не поощряет и не призывает к азартным играм на реальные средства.
+</div>
+
+<div id="loginModal" class="modal-bg">
+  <div class="modal">
+    <div class="marquee" style="font-size:18px; display:block; text-align:center; margin-bottom:14px;">Вход</div>
+    <label class="muted">Ник</label>
+    <input id="loginNick" type="text" placeholder="Твой ник">
+    <label class="muted">ID (18 цифр)</label>
+    <input id="loginId" type="text" inputmode="numeric" placeholder="Выданный владельцем ID">
+    <div id="err"></div>
+    <button class="action secondary" id="loginBtn">Войти</button>
+  </div>
+</div>
+
+<script>
+  // ЗАМЕНИ на адрес своего Worker'а (виден в Cloudflare после Deploy)
+  const API_BASE = 'https://casino-api.dedcount.workers.dev';
+
+  const $ = (s) => document.querySelector(s);
+  let me = null;
+
+  function fmtCoins(n){ return `${Number(n).toLocaleString('ru-RU')} 🪙`; }
+  function fmtBucks(coinAmount){
+    const bucks = coinAmount * 10000000;
+    const sign = bucks > 0 ? '+' : (bucks < 0 ? '-' : '');
+    return `${sign}$${Math.abs(bucks).toLocaleString('ru-RU')}`;
+  }
+
+  async function api(path, opts = {}) {
+    const res = await fetch(API_BASE + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка запроса');
+    return data;
+  }
+
+  function renderProfile(u){
+    $('#profileNick').textContent = u.nickname;
+    $('#pBalance').textContent = fmtCoins(u.balance);
+    $('#pWins').textContent = u.wins;
+    $('#pLosses').textContent = u.losses;
+    const netEl = $('#pNet');
+    netEl.textContent = fmtBucks(u.net_profit);
+    netEl.className = 'big ' + (u.net_profit > 0 ? 'plus' : (u.net_profit < 0 ? 'minus' : ''));
+    $('#pLudoman').textContent = u.ludoman_balance;
+  }
+
+  async function refreshProfile(){
+    const u = await api('/api/profile?id=' + encodeURIComponent(me.id));
+    me = u;
+    renderProfile(u);
+  }
+
+  async function loadUsers(){
+    const list = await api('/api/users');
+    $('#usersList').innerHTML = list.map(u => {
+      const bucks = u.net_profit * 10000000;
+      const cls = bucks > 0 ? 'plus' : (bucks < 0 ? 'minus' : '');
+      const sign = bucks > 0 ? '+' : (bucks < 0 ? '-' : '');
+      return `<div class="user-row"><span>${u.nickname}</span><span class="${cls}">${sign}$${Math.abs(bucks).toLocaleString('ru-RU')}</span></div>`;
+    }).join('') || '<div class="muted">Пока никого нет</div>';
+  }
+
+  // ---- Навигация ----
+  document.querySelectorAll('#nav button[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#nav button[data-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab').forEach(t => t.classList.add('hidden'));
+      $('#tab-' + btn.dataset.tab).classList.remove('hidden');
+      if (btn.dataset.tab === 'users') loadUsers();
+    });
+  });
+
+  // ---- Вход ----
+  $('#loginBtn').addEventListener('click', async () => {
+    const nickname = $('#loginNick').value.trim();
+    const id = $('#loginId').value.trim();
+    $('#err').textContent = '';
+    try {
+      const u = await api('/api/login', { method: 'POST', body: JSON.stringify({ nickname, id }) });
+      me = u;
+      localStorage.setItem('casino_id', id);
+      localStorage.setItem('casino_nick', nickname);
+      $('#loginModal').classList.add('hidden');
+      renderProfile(u);
+    } catch (e) {
+      $('#err').textContent = e.message;
+    }
+  });
+
+  $('#logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('casino_id');
+    localStorage.removeItem('casino_nick');
+    location.reload();
+  });
+
+  // ---- Ежедневная монета лудомана ----
+  $('#claimBtn').addEventListener('click', async () => {
+    try {
+      await api('/api/claim-ludoman', { method: 'POST', body: JSON.stringify({ id: me.id }) });
+      $('#claimNote').textContent = 'Монета зачислена!';
+      await refreshProfile();
+    } catch (e) {
+      $('#claimNote').textContent = e.message;
+    }
+  });
+
+  // ---- Выводы ----
+  $('#withdrawBtn').addEventListener('click', async () => {
+    const amount = Number(prompt('Сколько монет вывести?'));
+    if (!amount || amount <= 0) return;
+    if (!confirm(`Точно вывести ${amount} монет? Действие спишет их с баланса.`)) return;
+    try {
+      await api('/api/withdraw', { method: 'POST', body: JSON.stringify({ id: me.id, amount }) });
+      alert('Вывод оформлен.');
+      await refreshProfile();
+    } catch (e) { alert(e.message); }
+  });
+
+  $('#withdrawLudomanBtn').addEventListener('click', async () => {
+    if (!confirm('Вывести все монеты лудомана?')) return;
+    try {
+      await api('/api/withdraw-ludoman', { method: 'POST', body: JSON.stringify({ id: me.id }) });
+      alert('Вывод оформлен.');
+      await refreshProfile();
+    } catch (e) { alert(e.message); }
+  });
+
+  // ---- Старт ----
+  (async () => {
+    const savedId = localStorage.getItem('casino_id');
+    const savedNick = localStorage.getItem('casino_nick');
+    if (savedId && savedNick) {
+      try {
+        me = await api('/api/login', { method: 'POST', body: JSON.stringify({ nickname: savedNick, id: savedId }) });
+        $('#loginModal').classList.add('hidden');
+        renderProfile(me);
+      } catch (e) {
+        $('#loginModal').classList.remove('hidden');
+      }
+    }
+  })();
+</script>
+
+</body>
+</html>
