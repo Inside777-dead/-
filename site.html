@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jackpot Roulette</title>
+<style>
+  :root{
+    --bg:#06050a; --panel:#17151f; --panel2:#211d29;
+    --gold:#e8b64c; --gold-bright:#ffe08a;
+    --red:#d81e2c; --green:#1f9d55; --text:#f4f0e6; --muted:#9a94a8;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; min-height:100vh; background:
+      radial-gradient(ellipse 900px 500px at 50% 0%, rgba(232,182,76,0.10), transparent 60%), var(--bg);
+    color:var(--text); font-family:Arial,Helvetica,sans-serif; padding-bottom:60px;}
+  header{text-align:center; padding:26px 14px 10px; position:relative;}
+  .marquee{display:inline-block; position:relative; font-family:'Arial Black',Impact,sans-serif;
+    font-size:clamp(20px,6vw,34px); letter-spacing:3px; color:var(--gold-bright);
+    text-shadow:0 0 6px var(--gold),0 0 18px rgba(232,182,76,.7),0 0 34px rgba(232,182,76,.35);
+    animation:flicker 3.4s infinite;}
+  @keyframes flicker{0%,19%,21%,23%,80%,100%{opacity:1;}20%,22%,81%{opacity:.55;}}
+  .spark{position:absolute; width:4px; height:4px; border-radius:50%; background:var(--gold-bright);
+    box-shadow:0 0 6px 2px var(--gold-bright); animation:spark 2.6s infinite;}
+  @keyframes spark{0%{opacity:0; transform:scale(.3);}50%{opacity:1; transform:scale(1);}100%{opacity:0; transform:translateY(-14px) scale(.2);}}
+
+  nav{display:flex; justify-content:center; gap:8px; flex-wrap:wrap; padding:10px 8px 20px;}
+  nav button{background:var(--panel); color:var(--text); border:1px solid #3a3546; border-radius:20px;
+    padding:9px 16px; font-size:13px; cursor:pointer;}
+  nav button.active{background:var(--gold); color:#2a1b06; border-color:var(--gold); font-weight:bold;}
+
+  .wrap{max-width:520px; margin:0 auto; padding:0 14px 40px;}
+  .card{background:var(--panel); border:1px solid #2c2735; border-radius:14px; padding:18px; margin-bottom:14px;}
+  .row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #2a2534;}
+  .row:last-child{border-bottom:none;}
+  .muted{color:var(--muted); font-size:13px;}
+  .big{font-size:22px; font-weight:bold;}
+  .plus{color:var(--green);} .minus{color:var(--red);}
+
+  select,input{width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #443f52; background:#0e0c14; color:var(--text);}
+  button.action{width:100%; margin-top:8px; padding:12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;
+    background:linear-gradient(180deg,#ffb0b0,var(--red) 55%,#7a0f18); color:#fff;}
+  button.action.secondary{background:linear-gradient(180deg,#a8f0c6,var(--green) 55%,#0f5c30); color:#062;}
+  button.action:disabled{filter:grayscale(.6); opacity:.6; cursor:not-allowed;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;}
+  .modal{background:var(--panel2); border:1px solid var(--gold); border-radius:14px; padding:22px; max-width:360px; width:100%;}
+  .hidden{display:none !important;}
+
+  .user-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #2a2534;}
+  .disclaimer{font-size:12px; color:var(--muted); text-align:center; padding:20px 20px 40px; line-height:1.6;}
+  .faq h3{color:var(--gold-bright); margin-bottom:4px;}
+  .faq p{color:#cfc9db; font-size:14px; margin-top:0; line-height:1.5;}
+  #err{color:var(--red); font-size:13px; min-height:16px;}
+
+  .window{position:relative; width:100%; height:180px; border-radius:10px; overflow:hidden; background:#08070c;
+    box-shadow:inset 0 0 20px rgba(0,0,0,.9); margin-bottom:10px;}
+  .center-line{position:absolute; top:60px; left:0; right:0; height:60px; border-top:2px solid rgba(232,182,76,.5);
+    border-bottom:2px solid rgba(232,182,76,.5); z-index:3;}
+  .reel{position:absolute; left:0; right:0; top:0; will-change:transform;}
+  .cell{height:60px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:26px;}
+  .cell.red{background:radial-gradient(circle at 50% 35%, var(--red), #7a0f18);}
+  .cell.black{background:radial-gradient(circle at 50% 35%, #262230, #121017);}
+  .cell.green{background:radial-gradient(circle at 50% 35%, var(--green), #0f5c30);}
+
+  .oz-box{display:flex; gap:10px; margin:8px 0;}
+  .oz-box button{flex:1; padding:16px; font-size:22px; font-weight:bold; border-radius:10px; border:2px solid #443f52; background:#0e0c14; color:var(--text); cursor:pointer;}
+  .oz-box button.selected{border-color:var(--gold); background:#2a1b06; color:var(--gold-bright);}
+
+  .card-hand{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0;}
+  .playing-card{background:#fff; color:#111; border-radius:6px; padding:8px 10px; font-weight:bold; min-width:36px; text-align:center;}
+  .challenge{border:1px solid var(--gold); border-radius:10px; padding:10px; margin-bottom:8px;}
+  .result{margin-top:10px; text-align:center; font-weight:bold; min-height:20px;}
+  .win{color:var(--green);} .lose{color:var(--red);}
+
+  .subnav{display:flex; gap:6px; margin-bottom:12px;}
+  .subnav button{flex:1; background:var(--panel2); border:1px solid #3a3546; color:var(--text); border-radius:8px; padding:8px; font-size:12px; cursor:pointer;}
+  .subnav button.active{background:var(--gold); color:#2a1b06; font-weight:bold;}
+  .subtab{display:none;} .subtab.active{display:block;}
+
+  .notif{border-bottom:1px solid #2a2534; padding:8px 0; display:flex; justify-content:space-between; gap:8px; font-size:13px;}
+  .out{font-size:13px; color:var(--muted); margin-top:8px; white-space:pre-wrap;}
+  button.danger{background:var(--red); color:#fff; width:auto; padding:6px 10px; border:none; border-radius:8px; cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ================= ПУБЛИЧНЫЙ САЙТ ================= -->
+<div id="publicWrap">
+
+<header>
+  <div class="marquee">★ JACKPOT ROULETTE ★
+    <span class="spark" style="top:-6px;left:10%;animation-delay:.2s"></span>
+    <span class="spark" style="top:60%;left:92%;animation-delay:1s"></span>
+    <span class="spark" style="top:10%;left:80%;animation-delay:1.8s"></span>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="profile" class="active">Профиль</button>
+  <button data-tab="users">Пользователи</button>
+  <button data-tab="games">Игры</button>
+  <button data-tab="faq">FAQ</button>
+  <button id="logoutBtn">Выйти</button>
+</nav>
+
+<div class="wrap">
+
+  <div id="tab-profile" class="tab">
+    <div class="card" style="text-align:center;"><div class="marquee" style="font-size:20px;" id="profileNick">—</div></div>
+    <div class="card">
+      <div class="row"><span class="muted">Баланс</span><span class="big" id="pBalance">0 🪙</span></div>
+      <div class="row"><span class="muted">Побед</span><span id="pWins">0</span></div>
+      <div class="row"><span class="muted">Поражений</span><span id="pLosses">0</span></div>
+      <div class="row"><span class="muted">Итог по ставкам</span><span class="big" id="pNet">$0</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><span class="muted">Монеты лудомана</span><span class="big" id="pLudoman">0</span></div>
+      <button class="action secondary" id="claimBtn">Забрать монету лудомана (раз в 24ч)</button>
+      <div class="muted" id="claimNote" style="margin-top:6px;"></div>
+    </div>
+    <div class="card">
+      <button class="action" id="withdrawBtn">Вывести обычные монеты</button>
+      <button class="action" id="withdrawLudomanBtn">Вывести монеты лудомана</button>
+      <div class="muted" style="margin-top:6px;">Вывод монет лудомана доступен только после хотя бы одной ставки в любой игре.</div>
+    </div>
+  </div>
+
+  <div id="tab-users" class="tab hidden"><div class="card"><div id="usersList">Загрузка…</div></div></div>
+
+  <!-- ===== ИГРЫ ===== -->
+  <div id="tab-games" class="tab hidden">
+    <div class="subnav">
+      <button data-sub="roulette" class="active">Рулетка</button>
+      <button data-sub="onezero">One or Zero</button>
+      <button data-sub="blackjack">Blackjack</button>
+    </div>
+
+    <div id="sub-roulette" class="subtab active">
+      <div class="card">
+        <div class="window"><div class="reel" id="reel"></div><div class="center-line"></div></div>
+        <label class="muted">Тип ставки</label>
+        <select id="rType">
+          <option value="number">Число (x36)</option>
+          <option value="color">Цвет red/black (x2)</option>
+          <option value="even_odd">Чёт/нечет (x2)</option>
+          <option value="half">Половина low/high (x2)</option>
+          <option value="dozen">Дюжина 1/2/3 (x3)</option>
+          <option value="column">Колонка 1/2/3 (x3)</option>
+        </select>
+        <label class="muted">Значение</label>
+        <input id="rValue" placeholder="например: 17 / red / even / low / 2">
+        <label class="muted">Ставка</label>
+        <select id="rAmount"><option>1</option><option>2</option><option>5</option><option>10</option><option>25</option><option>35</option><option>50</option></select>
+        <button class="action" id="rPlay">ИГРАТЬ</button>
+        <div class="result" id="rResult"></div>
+      </div>
+    </div>
+
+    <div id="sub-onezero" class="subtab">
+      <div class="card">
+        <div class="oz-box"><button id="ozZero" data-v="0">0</button><button id="ozOne" data-v="1">1</button></div>
+        <label class="muted">Ставка</label>
+        <select id="ozAmount"><option>1</option><option>2</option><option>5</option><option>10</option><option>25</option><option>35</option><option>50</option></select>
+        <button class="action" id="ozPlay">ИГРАТЬ (x2)</button>
+        <div class="result" id="ozResult"></div>
+      </div>
+    </div>
+
+    <div id="sub-blackjack" class="subtab">
+      <div class="card">
+        <h3 style="margin-top:0;">Вызвать игрока</h3>
+        <input id="bjNick" placeholder="Ник соперника">
+        <select id="bjBet"><option>1</option><option>2</option><option>5</option><option>10</option><option>25</option><option>35</option><option>50</option></select>
+        <button class="action secondary" id="bjChallengeBtn">Бросить вызов</button>
+        <div class="muted" id="bjChallengeOut"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;">Входящие вызовы</h3>
+        <div id="bjPending" class="muted">Обновляется…</div>
+      </div>
+      <div class="card hidden" id="bjGameCard">
+        <h3 style="margin-top:0;">Игра</h3>
+        <div class="muted">Твоя рука (<span id="bjMyVal">0</span>)</div>
+        <div class="card-hand" id="bjMyHand"></div>
+        <div class="muted">Рука соперника (<span id="bjOppVal">0</span>)</div>
+        <div class="card-hand" id="bjOppHand"></div>
+        <button class="action secondary" id="bjHit">Взять карту</button>
+        <button class="action" id="bjStand">Стоп</button>
+        <div class="result" id="bjResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-faq" class="tab hidden faq">
+    <div class="card"><h3>Это виртуальная валюта</h3>
+      <p>Все монеты, ставки и выигрыши на этом сайте — виртуальные игровые единицы. Настоящие деньги нигде не используются, не принимаются и не выводятся. Сайт не побуждает и не поощряет азартные игры на реальные деньги.</p></div>
+    <div class="card"><h3>Рулетка</h3>
+      <p>Число — x36. Цвет (red/black), чёт/нечет, половина 1-18/19-36 — x2. Дюжина, колонка — x3. Зеро (0) — выигрывает только ставка на само число 0.</p></div>
+    <div class="card"><h3>One or Zero</h3>
+      <p>Выбираешь 1 или 0, крутится барабан. Угадал — забираешь x2 от ставки.</p></div>
+    <div class="card"><h3>Blackjack (без крупье)</h3>
+      <p>Играется только против другого игрока сайта. Отправляешь вызов из вкладки Игры — у соперника 5 минут принять или отклонить.</p></div>
+    <div class="card"><h3>Ставки</h3>
+      <p>Минимум 1 монета, максимум 10 за раз, либо диапазон 25-50 монет. Все игры — честный случайный результат без подкруток.</p></div>
+  </div>
+
+</div>
+
+<div class="disclaimer">⚠️ Все игры на этом сайте виртуальные. Реальные деньги не используются и не выводятся. Администрация сайта не поощряет и не призывает к азартным играм на реальные средства.</div>
+
+<div id="loginModal" class="modal-bg">
+  <div class="modal">
+    <div class="marquee" style="font-size:18px; display:block; text-align:center; margin-bottom:14px;">Вход</div>
+    <label class="muted">Ник</label><input id="loginNick" type="text" placeholder="Твой ник">
+    <label class="muted">ID (18 цифр)</label><input id="loginId" type="text" inputmode="numeric" placeholder="Выданный владельцем ID">
+    <div id="err"></div>
+    <button class="action secondary" id="loginBtn">Войти</button>
+  </div>
+</div>
+
+</div>
+
+<!-- ================= АДМИН (только по адресу ...#admin) ================= -->
+<div id="adminWrap" class="hidden wrap">
+  <h1 style="color:var(--gold); text-align:center;">🔑 Панель владельца</h1>
+  <div id="gate" class="card">
+    <label class="muted">Ключ владельца (OWNER_KEY)</label>
+    <input id="ownerKey" type="password" placeholder="Твой секретный ключ">
+    <button class="action secondary" id="enterBtn">Войти</button>
+  </div>
+  <div id="panel" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0;">Создать аккаунт</h3>
+      <input id="createNick" placeholder="Ник игрока">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin:6px 0;">
+        <input type="checkbox" id="createIsOwner" style="width:auto; margin:0;"> Это мой аккаунт (без проверки баланса)
+      </label>
+      <button class="action secondary" id="createBtn">Создать и получить ID</button>
+      <div class="out" id="createOut"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Удалить аккаунт</h3>
+      <input id="deleteId" placeholder="ID игрока">
+      <button class="action" id="deleteBtn">Удалить</button>
+      <div class="out" id="deleteOut"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Выдать / списать монеты</h3>
+      <input id="giveId" placeholder="ID игрока">
+      <input id="giveAmount" type="number" placeholder="Количество (отрицательное — списать)">
+      <button class="action secondary" id="giveBtn">Применить</button>
+      <div class="out" id="giveOut"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Уведомления о выводах</h3>
+      <button class="action" id="refreshNotif" style="margin-top:0;">Обновить</button>
+      <div id="notifList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://casino-api.dedcount.workers.dev';
+  const $ = (s) => document.querySelector(s);
+
+  async function api(path, opts = {}) {
+    const res = await fetch(API_BASE + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка запроса');
+    return data;
+  }
+
+  // ============================================================
+  // РЕЖИМ: #admin показывает только панель владельца
+  // ============================================================
+  if (location.hash === '#admin') {
+    document.getElementById('publicWrap').classList.add('hidden');
+    document.getElementById('adminWrap').classList.remove('hidden');
+    initAdmin();
+  } else {
+    initPublic();
+  }
+
+  // ============================================================
+  // ПУБЛИЧНАЯ ЧАСТЬ
+  // ============================================================
+  function initPublic(){
+    let me = null;
+    const myIdRef = () => me ? me.id : null;
+
+    function fmtCoins(n){ return `${Number(n).toLocaleString('ru-RU')} 🪙`; }
+    function fmtBucks(coinAmount){
+      const bucks = coinAmount * 10000000;
+      const sign = bucks > 0 ? '+' : (bucks < 0 ? '-' : '');
+      return `${sign}$${Math.abs(bucks).toLocaleString('ru-RU')}`;
+    }
+    function renderProfile(u){
+      $('#profileNick').textContent = u.nickname;
+      $('#pBalance').textContent = fmtCoins(u.balance);
+      $('#pWins').textContent = u.wins;
+      $('#pLosses').textContent = u.losses;
+      const netEl = $('#pNet');
+      netEl.textContent = fmtBucks(u.net_profit);
+      netEl.className = 'big ' + (u.net_profit>0?'plus':(u.net_profit<0?'minus':''));
+      $('#pLudoman').textContent = u.ludoman_balance;
+    }
+    async function refreshProfile(){ const u = await api('/api/profile?id='+encodeURIComponent(me.id)); me=u; renderProfile(u); }
+    async function loadUsers(){
+      const list = await api('/api/users');
+      $('#usersList').innerHTML = list.map(u=>{
+        const bucks=u.net_profit*10000000, cls=bucks>0?'plus':(bucks<0?'minus':''), sign=bucks>0?'+':(bucks<0?'-':'');
+        return `<div class="user-row"><span>${u.nickname}</span><span class="${cls}">${sign}$${Math.abs(bucks).toLocaleString('ru-RU')}</span></div>`;
+      }).join('') || '<div class="muted">Пока никого нет</div>';
+    }
+
+    document.querySelectorAll('#nav button[data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#nav button[data-tab]').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
+        $('#tab-'+btn.dataset.tab).classList.remove('hidden');
+        if (btn.dataset.tab==='users') loadUsers();
+      });
+    });
+
+    $('#loginBtn').addEventListener('click', async ()=>{
+      const nickname=$('#loginNick').value.trim(), id=$('#loginId').value.trim();
+      $('#err').textContent='';
+      try{
+        const u = await api('/api/login',{method:'POST',body:JSON.stringify({nickname,id})});
+        me=u;
+        localStorage.setItem('casino_id',id); localStorage.setItem('casino_nick',nickname);
+        $('#loginModal').classList.add('hidden');
+        renderProfile(u);
+      }catch(e){ $('#err').textContent=e.message; }
+    });
+    $('#logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('casino_id'); localStorage.removeItem('casino_nick'); location.reload();
+    });
+    $('#claimBtn').addEventListener('click', async ()=>{
+      try{ await api('/api/claim-ludoman',{method:'POST',body:JSON.stringify({id:me.id})});
+        $('#claimNote').textContent='Монета зачислена!'; await refreshProfile();
+      }catch(e){ $('#claimNote').textContent=e.message; }
+    });
+    $('#withdrawBtn').addEventListener('click', async ()=>{
+      const amount=Number(prompt('Сколько монет вывести?')); if(!amount||amount<=0) return;
+      if(!confirm(`Точно вывести ${amount} монет?`)) return;
+      try{ await api('/api/withdraw',{method:'POST',body:JSON.stringify({id:me.id,amount})}); alert('Вывод оформлен.'); await refreshProfile(); }
+      catch(e){ alert(e.message); }
+    });
+    $('#withdrawLudomanBtn').addEventListener('click', async ()=>{
+      if(!confirm('Вывести все монеты лудомана?')) return;
+      try{ await api('/api/withdraw-ludoman',{method:'POST',body:JSON.stringify({id:me.id})}); alert('Вывод оформлен.'); await refreshProfile(); }
+      catch(e){ alert(e.message); }
+    });
+
+    // ---- Подвкладки игр ----
+    document.querySelectorAll('.subnav button').forEach(b=>b.addEventListener('click', ()=>{
+      document.querySelectorAll('.subnav button').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      $('#sub-'+b.dataset.sub).classList.add('active');
+    }));
+
+    // ---- Рулетка ----
+    const reelOrder=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+    const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+    function colorOf(n){return n===0?'green':(RED.has(n)?'red':'black');}
+    const CELL=60, WIN_H=180, REPEATS=8;
+    const reel=$('#reel');
+    for(let r=0;r<REPEATS;r++) reelOrder.forEach(n=>{ const c=document.createElement('div'); c.className='cell '+colorOf(n); c.textContent=n; reel.appendChild(c); });
+    function ty(i){ return WIN_H/2-(i*CELL+CELL/2); }
+    let reelIndex=0; reel.style.transform=`translateY(${ty(0)}px)`;
+    function spinReelTo(landed, cb){
+      const idx=reelOrder.indexOf(landed), loops=3;
+      const remainder=(idx-reelIndex+reelOrder.length)%reelOrder.length;
+      const newIndex=reelIndex+loops*reelOrder.length+remainder;
+      reel.style.transition='transform 3.2s cubic-bezier(0.13,0.83,0.13,1)';
+      reel.style.transform=`translateY(${ty(newIndex)}px)`;
+      setTimeout(()=>{ reel.style.transition='none'; reel.style.transform=`translateY(${ty(idx)}px)`; reelIndex=idx; void reel.offsetWidth; cb(); },3300);
+    }
+    $('#rPlay').addEventListener('click', async ()=>{
+      if(!me) return alert('Сначала войди');
+      $('#rPlay').disabled=true; $('#rResult').textContent='';
+      try{
+        const r=await api('/api/bet/roulette',{method:'POST',body:JSON.stringify({id:me.id,type:$('#rType').value,value:$('#rValue').value,amount:Number($('#rAmount').value)})});
+        spinReelTo(r.landed, ()=>{
+          const res=$('#rResult');
+          res.textContent = r.win?`🟢 Победа! +${r.payout} 🪙`:`🔴 Поражение. Выпало ${r.landed}`;
+          res.className='result '+(r.win?'win':'lose');
+          $('#rPlay').disabled=false;
+        });
+      }catch(e){ $('#rResult').textContent=e.message; $('#rPlay').disabled=false; }
+    });
+
+    // ---- One or Zero ----
+    let ozChoice=null;
+    $('#ozZero').addEventListener('click', ()=>{ ozChoice='0'; $('#ozZero').classList.add('selected'); $('#ozOne').classList.remove('selected'); });
+    $('#ozOne').addEventListener('click', ()=>{ ozChoice='1'; $('#ozOne').classList.add('selected'); $('#ozZero').classList.remove('selected'); });
+    $('#ozPlay').addEventListener('click', async ()=>{
+      if(!me) return alert('Сначала войди');
+      if(ozChoice===null){ $('#ozResult').textContent='Выбери 0 или 1'; return; }
+      $('#ozPlay').disabled=true;
+      try{
+        const r=await api('/api/bet/onezero',{method:'POST',body:JSON.stringify({id:me.id,choice:ozChoice,amount:Number($('#ozAmount').value)})});
+        const res=$('#ozResult');
+        res.textContent = r.win?`🟢 Выпало ${r.landed}. Победа! +${r.payout} 🪙`:`🔴 Выпало ${r.landed}. Поражение.`;
+        res.className='result '+(r.win?'win':'lose');
+      }catch(e){ $('#ozResult').textContent=e.message; }
+      $('#ozPlay').disabled=false;
+    });
+
+    // ---- Blackjack ----
+    $('#bjChallengeBtn').addEventListener('click', async ()=>{
+      if(!me) return alert('Сначала войди');
+      try{
+        const r=await api('/api/blackjack/challenge',{method:'POST',body:JSON.stringify({from_id:me.id,to_nickname:$('#bjNick').value.trim(),bet:Number($('#bjBet').value)})});
+        $('#bjChallengeOut').textContent='Вызов отправлен, ждём ответа (до 5 минут)…';
+        pollChallengeStatus(r.challenge_id);
+      }catch(e){ $('#bjChallengeOut').textContent=e.message; }
+    });
+    function pollChallengeStatus(cid){
+      const iv=setInterval(async ()=>{
+        try{
+          const c=await api('/api/blackjack/challenge-status?challenge_id='+cid);
+          if(c.status==='accepted'){ clearInterval(iv); $('#bjChallengeOut').textContent='Принято!'; openGame(c.game_id); }
+          else if(c.status==='declined'){ clearInterval(iv); $('#bjChallengeOut').textContent='Соперник отклонил вызов.'; }
+          else if(c.status==='expired'){ clearInterval(iv); $('#bjChallengeOut').textContent='Время вызова истекло.'; }
+        }catch(e){}
+      },3000);
+    }
+    async function loadPending(){
+      if(!me) return;
+      try{
+        const list=await api('/api/blackjack/pending?id='+me.id);
+        $('#bjPending').innerHTML = list.length ? list.map(c=>`
+          <div class="challenge"><b>${c.from_nickname}</b> вызывает на ${c.bet} 🪙
+            <div style="display:flex; gap:8px; margin-top:6px;">
+              <button class="action secondary" style="margin:0;" onclick="respondChallenge(${c.id},true)">Принять</button>
+              <button class="action" style="margin:0;" onclick="respondChallenge(${c.id},false)">Отклонить</button>
+            </div></div>`).join('') : '<div class="muted">Пока никто не вызывал</div>';
+      }catch(e){}
+    }
+    window.respondChallenge = async (cid, accept)=>{
+      try{ const r=await api('/api/blackjack/respond',{method:'POST',body:JSON.stringify({challenge_id:cid,id:me.id,accept})});
+        if(r.accepted) openGame(r.game_id); loadPending();
+      }catch(e){ alert(e.message); }
+    };
+    setInterval(loadPending, 5000);
+
+    let currentGameId=null;
+    function openGame(gid){
+      currentGameId=gid; $('#bjGameCard').classList.remove('hidden');
+      document.querySelectorAll('#nav button[data-tab]').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
+      document.querySelector('#nav button[data-tab="games"]').classList.add('active');
+      $('#tab-games').classList.remove('hidden');
+      document.querySelectorAll('.subnav button').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
+      document.querySelector('.subnav button[data-sub="blackjack"]').classList.add('active');
+      $('#sub-blackjack').classList.add('active');
+      refreshGame();
+    }
+    async function refreshGame(){
+      if(!currentGameId || !me) return;
+      try{
+        const g=await api(`/api/blackjack/state?game_id=${currentGameId}&id=${me.id}`);
+        const isP1=g.player1_id===me.id;
+        const myHand=isP1?g.hand1:g.hand2, oppHand=isP1?g.hand2:g.hand1;
+        const myVal=isP1?g.value1:g.value2, oppVal=isP1?g.value2:g.value1;
+        $('#bjMyHand').innerHTML=myHand.map(c=>`<div class="playing-card">${c}</div>`).join('');
+        $('#bjOppHand').innerHTML=oppHand.map(c=>`<div class="playing-card">${c}</div>`).join('');
+        $('#bjMyVal').textContent=myVal; $('#bjOppVal').textContent=oppVal;
+        const myTurn=g.turn===me.id && g.status==='playing';
+        $('#bjHit').disabled=!myTurn; $('#bjStand').disabled=!myTurn;
+        if(g.status==='finished'){
+          const res=$('#bjResult');
+          if(!g.winner_id){ res.textContent='Ничья — ставки возвращены.'; res.className='result'; }
+          else{ const iWon=g.winner_id===me.id; res.textContent=iWon?'🟢 Ты выиграл!':'🔴 Ты проиграл.'; res.className='result '+(iWon?'win':'lose'); }
+        }else{ $('#bjResult').textContent = myTurn?'Твой ход':'Ход соперника…'; $('#bjResult').className='result'; }
+      }catch(e){}
+    }
+    setInterval(refreshGame, 2500);
+    $('#bjHit').addEventListener('click', async ()=>{ try{ await api('/api/blackjack/hit',{method:'POST',body:JSON.stringify({game_id:currentGameId,id:me.id})}); refreshGame(); }catch(e){ alert(e.message); } });
+    $('#bjStand').addEventListener('click', async ()=>{ try{ await api('/api/blackjack/stand',{method:'POST',body:JSON.stringify({game_id:currentGameId,id:me.id})}); refreshGame(); }catch(e){ alert(e.message); } });
+
+    // ---- Автовход ----
+    (async ()=>{
+      const savedId=localStorage.getItem('casino_id'), savedNick=localStorage.getItem('casino_nick');
+      if(savedId && savedNick){
+        try{ me=await api('/api/login',{method:'POST',body:JSON.stringify({nickname:savedNick,id:savedId})}); $('#loginModal').classList.add('hidden'); renderProfile(me); }
+        catch(e){ $('#loginModal').classList.remove('hidden'); }
+      }
+      loadPending();
+    })();
+  }
+
+  // ============================================================
+  // АДМИН-ЧАСТЬ
+  // ============================================================
+  function initAdmin(){
+    let ownerKey='';
+    async function adminApi(path, opts={}){
+      const res=await fetch(API_BASE+path,{...opts, headers:{'Content-Type':'application/json','x-owner-key':ownerKey, ...(opts.headers||{})}});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.error||'Ошибка');
+      return data;
+    }
+    $('#enterBtn').addEventListener('click', async ()=>{
+      ownerKey=$('#ownerKey').value;
+      try{ await adminApi('/admin/notifications'); $('#gate').classList.add('hidden'); $('#panel').classList.remove('hidden'); loadNotifications(); }
+      catch(e){ alert('Неверный ключ или Worker недоступен: '+e.message); }
+    });
+    $('#createBtn').addEventListener('click', async ()=>{
+      try{
+        const r=await adminApi('/admin/create',{method:'POST',body:JSON.stringify({nickname:$('#createNick').value.trim(), isOwnerAccount:$('#createIsOwner').checked})});
+        $('#createOut').textContent=`Готово! Ник: ${r.nickname}\nID: ${r.id}\n(передай этот ID игроку)`;
+      }catch(e){ $('#createOut').textContent='Ошибка: '+e.message; }
+    });
+    $('#deleteBtn').addEventListener('click', async ()=>{
+      try{ await adminApi('/admin/delete',{method:'POST',body:JSON.stringify({id:$('#deleteId').value.trim()})}); $('#deleteOut').textContent='Удалено.'; }
+      catch(e){ $('#deleteOut').textContent='Ошибка: '+e.message; }
+    });
+    $('#giveBtn').addEventListener('click', async ()=>{
+      try{ const r=await adminApi('/admin/give',{method:'POST',body:JSON.stringify({id:$('#giveId').value.trim(), amount:Number($('#giveAmount').value)})});
+        $('#giveOut').textContent=`Новый баланс: ${r.newBalance}`;
+      }catch(e){ $('#giveOut').textContent='Ошибка: '+e.message; }
+    });
+    async function loadNotifications(){
+      const list=await adminApi('/admin/notifications');
+      $('#notifList').innerHTML = list.map(n=>`
+        <div class="notif"><span>${n.message}<br><small>${n.created_at}</small></span>
+          <button class="danger" onclick="deleteNotif(${n.id})">✕</button></div>`).join('') || '<div class="out">Пусто</div>';
+    }
+    window.deleteNotif = async (id)=>{ await adminApi('/admin/notifications/'+id,{method:'DELETE'}); loadNotifications(); };
+    $('#refreshNotif').addEventListener('click', loadNotifications);
+  }
+</script>
+
+</body>
+</html>
