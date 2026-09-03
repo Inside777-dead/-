@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frost Roulette</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --void:#04060a; --glass:rgba(255,255,255,.045); --glass-strong:rgba(255,255,255,.09);
+    --frost:rgba(170,225,255,.22); --frost-soft:rgba(170,225,255,.11);
+    --ice:#6fe3ff; --ice-bright:#d7f8ff; --ice-deep:#2fb3dd;
+    --mint:#3ce8a0; --mint-deep:#0f8f5c;
+    --coral:#ff5c72; --coral-deep:#a01f34;
+    --text:#eef6fb; --muted:#8a96a7;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{-webkit-tap-highlight-color:transparent;}
+  body{margin:0; min-height:100vh; position:relative; overflow-x:hidden;
+    background:var(--void); color:var(--text); font-family:'Manrope',-apple-system,'Segoe UI',Arial,sans-serif;
+    padding-bottom:60px; touch-action:manipulation;}
+  #bgCanvas{position:fixed; inset:0; z-index:0; pointer-events:none;}
+  .glow-blob{position:fixed; width:380px; height:380px; border-radius:50%; filter:blur(80px); opacity:.13; pointer-events:none; z-index:0;}
+  .glow-blob.a{background:var(--ice); top:-140px; left:-120px; animation:driftA 22s ease-in-out infinite;}
+  .glow-blob.b{background:var(--mint); bottom:-160px; right:-120px; animation:driftB 26s ease-in-out infinite;}
+  @keyframes driftA{0%,100%{transform:translate(0,0);}50%{transform:translate(40px,60px);}}
+  @keyframes driftB{0%,100%{transform:translate(0,0);}50%{transform:translate(-50px,-40px);}}
+  button, a, input, select{-webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--ice); outline-offset:2px;}
+
+  header{position:relative; z-index:1; text-align:center; padding:28px 14px 6px; animation:headerIn .9s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes headerIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:none;}}
+  .marquee{display:inline-block; position:relative; font-weight:800;
+    font-size:clamp(19px,5.6vw,30px); letter-spacing:.3px; color:var(--ice-bright);
+    background:linear-gradient(100deg, var(--ice-bright) 0%, var(--ice) 35%, #fff 50%, var(--ice) 65%, var(--ice-bright) 100%);
+    background-size:220% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 10px rgba(111,227,255,.45));
+    animation:flicker 4s infinite, shimmer 5s linear infinite;}
+  @keyframes flicker{0%,19%,21%,23%,80%,100%{opacity:1;}20%,22%,81%{opacity:.68;}}
+  @keyframes shimmer{0%{background-position:0% 0;}100%{background-position:-220% 0;}}
+  .spark{position:absolute; width:3px; height:3px; border-radius:50%; background:var(--ice-bright);
+    box-shadow:0 0 8px 2px var(--ice-bright); animation:spark 2.8s infinite;}
+  @keyframes spark{0%{opacity:0; transform:scale(.3);}50%{opacity:1; transform:scale(1);}100%{opacity:0; transform:translateY(-14px) scale(.2);}}
+
+  nav{position:relative; z-index:1; display:flex; justify-content:center; gap:4px; flex-wrap:wrap;
+    padding:16px 10px 22px; max-width:520px; margin:0 auto;}
+  nav button{background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    color:var(--muted); border:1px solid var(--frost-soft); border-radius:14px;
+    padding:9px 15px; font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .18s ease;}
+  nav button.active{background:linear-gradient(160deg, var(--ice) 0%, var(--ice-deep) 100%); color:#04222b;
+    border-color:transparent; box-shadow:0 0 18px rgba(111,227,255,.35); font-weight:700;}
+  nav button:active{transform:scale(.96);}
+  nav button#logoutBtn{background:transparent; border-color:rgba(255,92,114,.25); color:var(--coral);}
+
+  .wrap{position:relative; z-index:1; max-width:500px; margin:0 auto; padding:0 14px 40px;}
+  .card{background:linear-gradient(160deg, var(--glass-strong), var(--glass));
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border:1px solid var(--frost-soft); border-radius:20px; padding:20px; margin-bottom:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 16px 34px rgba(0,0,0,.4); position:relative;}
+  .card-label{font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px;}
+  .row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.06);}
+  .row:last-child{border-bottom:none;}
+  .muted{color:var(--muted); font-size:13px;}
+  .big{font-size:26px; font-weight:800; letter-spacing:-.3px;}
+  .plus{color:var(--mint);} .minus{color:var(--coral);}
+
+  .avatar{width:58px; height:58px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+    font-size:26px; background:linear-gradient(160deg, rgba(111,227,255,.22), rgba(111,227,255,.04));
+    border:1px solid var(--frost); box-shadow:0 0 22px rgba(111,227,255,.18) inset; flex-shrink:0;}
+  .profile-head{display:flex; align-items:center; gap:14px;}
+  .profile-head .name{font-size:17px; font-weight:800;}
+  .profile-head .idtag{font-size:11.5px; color:var(--muted); font-family:monospace; margin-top:2px;}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;}
+  .stat-box{background:rgba(255,255,255,.03); border:1px solid var(--frost-soft); border-radius:14px; padding:12px; text-align:center;}
+  .stat-box .n{font-size:19px; font-weight:800;}
+  .stat-box .l{font-size:11px; color:var(--muted); margin-top:2px;}
+
+  input{width:100%; padding:12px 13px; margin:6px 0; border-radius:12px; border:1px solid var(--frost-soft);
+    background:rgba(255,255,255,.03); color:var(--text); font-family:inherit; font-size:14px;}
+  input:focus{border-color:var(--frost); outline:none;}
+  button.action{width:100%; margin-top:8px; padding:14px; border:none; border-radius:14px; font-weight:700;
+    font-family:inherit; font-size:14px; cursor:pointer; color:#04222b; letter-spacing:.1px;
+    background:linear-gradient(160deg, var(--ice-bright), var(--ice) 55%, var(--ice-deep));
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 8px 18px rgba(47,179,221,.25); transition:transform .12s ease, filter .12s ease;}
+  button.action:active{transform:scale(.98); filter:brightness(.95);}
+  button.action.secondary{color:#04261a; background:linear-gradient(160deg, #baffdf, var(--mint) 55%, var(--mint-deep));
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 8px 18px rgba(60,232,160,.22);}
+  button.action.ghost{color:var(--coral); background:transparent; border:1px solid rgba(255,92,114,.3); box-shadow:none;}
+  button.action:disabled{filter:grayscale(.5) brightness(.7); opacity:.55; cursor:not-allowed; transform:none;}
+  button.action.small{width:auto; padding:9px 14px; font-size:12.5px; margin-top:0;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(2,4,8,.75); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center; padding:16px; z-index:50; animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0;} to{opacity:1;}}
+  .modal{background:linear-gradient(160deg, rgba(20,26,38,.94), rgba(10,14,22,.94)); backdrop-filter:blur(20px);
+    border:1px solid var(--frost); border-radius:22px; padding:26px; max-width:360px; width:100%;
+    box-shadow:0 0 0 1px rgba(111,227,255,.06), 0 24px 60px rgba(0,0,0,.5); animation:modalIn .25s cubic-bezier(.2,.9,.25,1);}
+  @keyframes modalIn{from{opacity:0; transform:scale(.94) translateY(8px);} to{opacity:1; transform:none;}}
+  .hidden{display:none !important;}
+
+  .table-card{padding:8px 18px;}
+  .table-head{display:flex; justify-content:space-between; padding:12px 0 8px; font-size:11px; font-weight:700;
+    letter-spacing:.8px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--frost-soft);}
+  .user-row{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.06); font-size:14px;}
+  .user-row:last-child{border-bottom:none;}
+  .pill{display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700;}
+  .pill.plus{background:rgba(60,232,160,.14); color:var(--mint);}
+  .pill.minus{background:rgba(255,92,114,.14); color:var(--coral);}
+
+  .disclaimer{position:relative; z-index:1; font-size:11.5px; color:var(--muted); text-align:center; padding:16px 24px 40px; line-height:1.6; max-width:440px; margin:0 auto;}
+  .faq-card summary{cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;
+    color:var(--ice-bright); font-weight:700; font-size:15px;}
+  .faq-card summary::-webkit-details-marker{display:none;}
+  .faq-card summary::after{content:"›"; font-size:20px; color:var(--muted); transform:rotate(90deg); transition:transform .2s ease;}
+  .faq-card[open] summary::after{transform:rotate(270deg);}
+  .faq-card p{color:#c4d3e0; font-size:13.5px; margin:10px 0 0; line-height:1.55;}
+
+  .window{position:relative; width:100%; height:180px; border-radius:16px; overflow:hidden; background:#05070a;
+    box-shadow:inset 0 0 26px rgba(0,0,0,.85), 0 0 0 1px var(--frost); margin-bottom:14px;}
+  .center-line{position:absolute; top:60px; left:0; right:0; height:60px; border-top:2px solid rgba(111,227,255,.55);
+    border-bottom:2px solid rgba(111,227,255,.55); box-shadow:0 0 14px rgba(111,227,255,.15) inset; z-index:3;}
+  .reel{position:absolute; left:0; right:0; top:0; will-change:transform;}
+  .cell{height:60px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:25px;}
+  .cell.red{background:radial-gradient(circle at 50% 35%, #ff3d54, #7a0f18);}
+  .cell.black{background:radial-gradient(circle at 50% 35%, #232735, #0c0e14);}
+  .cell.green{background:radial-gradient(circle at 50% 35%, var(--mint), #0f5c30);}
+
+  .chip-row{display:flex; gap:7px; flex-wrap:wrap; margin:8px 0 14px;}
+  .chip{background:rgba(255,255,255,.03); border:1px solid var(--frost-soft); color:var(--text);
+    border-radius:11px; padding:9px 13px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .15s ease;}
+  .chip.selected{border-color:var(--ice); background:rgba(111,227,255,.14); color:var(--ice-bright); box-shadow:0 0 14px rgba(111,227,255,.15) inset;}
+  .chip.wide{flex:1; text-align:center;}
+  .num-grid{display:flex; gap:5px; flex-wrap:wrap; margin:8px 0 14px;}
+  .num-chip{width:35px; height:35px; border-radius:9px; border:1px solid var(--frost-soft); font-weight:800; font-size:12.5px;
+    cursor:pointer; color:#fff; font-family:inherit;}
+  .num-chip.red{background:linear-gradient(160deg,#ff5468,#8a1424);}
+  .num-chip.black{background:linear-gradient(160deg,#333a4a,#12141c);}
+  .num-chip.green{background:linear-gradient(160deg,#5cf0b0,#0f5c30);}
+  .num-chip.selected{outline:2px solid var(--ice-bright); outline-offset:1px;}
+
+  .oz-reveal{display:flex; gap:10px; margin-bottom:12px;}
+  .oz-cell{flex:1; height:74px; border-radius:16px; background:#05070a; border:1px solid var(--frost-soft);
+    display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:800; color:var(--muted);}
+  .oz-cell.flash{background:rgba(111,227,255,.18); border-color:var(--ice); color:var(--ice-bright); box-shadow:0 0 20px rgba(111,227,255,.35) inset;}
+  .oz-cell.landed-win{background:linear-gradient(160deg,#baffdf,var(--mint) 60%,var(--mint-deep)); color:#04261a; box-shadow:0 0 26px rgba(60,232,160,.45);}
+  .oz-cell.landed-lose{background:linear-gradient(160deg,#ffb0b8,var(--coral) 60%,var(--coral-deep)); color:#2a0007; box-shadow:0 0 26px rgba(255,92,114,.4);}
+  .oz-box{display:flex; gap:10px; margin:8px 0;}
+  .oz-box button{flex:1; padding:16px; font-size:21px; font-weight:800; font-family:inherit; border-radius:14px;
+    border:1px solid var(--frost-soft); background:rgba(255,255,255,.03); color:var(--text); cursor:pointer; transition:all .15s ease;}
+  .oz-box button.selected{border-color:var(--ice); background:rgba(111,227,255,.12); color:var(--ice-bright); box-shadow:0 0 16px rgba(111,227,255,.18) inset;}
+
+  .card-hand{display:flex; gap:7px; flex-wrap:wrap; margin:8px 0;}
+  .playing-card{background:linear-gradient(160deg,#fff,#e7eef2); color:#14181f; border-radius:9px; padding:9px 11px;
+    font-weight:800; min-width:38px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,.3); font-size:14px;}
+  .playing-card.back{background:linear-gradient(155deg, #16233a, #0a1220); color:transparent; position:relative; overflow:hidden;}
+  .playing-card.back::after{content:"❄"; color:rgba(111,227,255,.5); font-size:16px; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;}
+  .busted-tag{display:inline-block; margin-left:8px; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:700;
+    background:rgba(255,92,114,.16); color:var(--coral);}
+  .challenge{border:1px solid var(--frost); background:rgba(111,227,255,.05); border-radius:14px; padding:12px; margin-bottom:8px;}
+  .result{margin-top:10px; text-align:center; font-weight:700; min-height:20px; font-size:14.5px;}
+  .win{color:var(--mint);} .lose{color:var(--coral);}
+
+  .subnav{display:flex; gap:4px; margin-bottom:14px; background:var(--glass); border:1px solid var(--frost-soft);
+    border-radius:14px; padding:4px;}
+  .subnav button{flex:1; background:transparent; border:none; color:var(--muted); border-radius:11px; padding:9px;
+    font-size:12px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .15s ease;}
+  .subnav button.active{background:linear-gradient(160deg, var(--ice), var(--ice-deep)); color:#04222b; font-weight:700;}
+  .subtab{display:none;} .subtab.active{display:block;}
+
+  .notif{border-bottom:1px solid rgba(255,255,255,.06); padding:9px 0; display:flex; justify-content:space-between; gap:8px; font-size:13px;}
+  .out{font-size:13px; color:var(--muted); margin-top:8px; white-space:pre-wrap;}
+  .icon-btn{background:rgba(255,255,255,.05); border:1px solid var(--frost-soft); border-radius:9px; width:32px; height:32px;
+    cursor:pointer; font-size:14px; color:var(--text);}
+  .icon-btn.danger{border-color:rgba(255,92,114,.3); color:var(--coral);}
+  .icon-btn.mint{border-color:rgba(60,232,160,.3); color:var(--mint);}
+  .settings-row{display:flex; gap:8px; align-items:center; margin-bottom:12px;}
+  .settings-row .lbl{width:78px; font-size:12.5px; color:var(--muted); flex-shrink:0;}
+  .settings-row input{margin:0; padding:9px 10px;}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="glow-blob a"></div>
+<div class="glow-blob b"></div>
+
+<div id="publicWrap">
+
+<header>
+  <div class="marquee">❄ FROST ROULETTE ❄
+    <span class="spark" style="top:-6px;left:10%;animation-delay:.2s"></span>
+    <span class="spark" style="top:60%;left:92%;animation-delay:1s"></span>
+    <span class="spark" style="top:10%;left:80%;animation-delay:1.8s"></span>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="profile" class="active">🧊 Профиль</button>
+  <button data-tab="users">👥 Игроки</button>
+  <button data-tab="games">🎮 Игры</button>
+  <button data-tab="faq">📖 FAQ</button>
+  <button id="logoutBtn">🚪 Выйти</button>
+</nav>
+
+<div class="wrap">
+
+  <div id="tab-profile" class="tab">
+    <div class="card">
+      <div class="profile-head">
+        <div class="avatar">🧊</div>
+        <div>
+          <div class="name" id="profileNick">—</div>
+          <div class="idtag" id="profileId">ID: —</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="n" id="pBalance">0</div><div class="l">Баланс 🪙</div></div>
+        <div class="stat-box"><div class="n" id="pNet">$0</div><div class="l">Итог по ставкам</div></div>
+        <div class="stat-box"><div class="n" id="pWins">0</div><div class="l">Побед</div></div>
+        <div class="stat-box"><div class="n" id="pLosses">0</div><div class="l">Поражений</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row"><span class="muted">Монеты лудомана</span><span class="big" id="pLudoman" style="font-size:20px;">0</span></div>
+      <div class="muted" id="ludomanTimer" style="margin-bottom:6px;"></div>
+      <button class="action secondary" id="claimBtn">Забрать монету (раз в 24ч)</button>
+      <div class="muted" id="claimNote" style="margin-top:6px;"></div>
+    </div>
+
+    <div class="card">
+      <button class="action" id="withdrawBtn">Вывести обычные монеты</button>
+      <button class="action" id="withdrawLudomanBtn">Вывести монеты лудомана</button>
+      <button class="action ghost" id="logoutBtn2">Выйти из аккаунта</button>
+      <div class="muted" style="margin-top:6px;">Вывод монет лудомана доступен только после хотя бы одной ставки в любой игре.</div>
+    </div>
+  </div>
+
+  <div id="tab-users" class="tab hidden">
+    <div class="card table-card">
+      <div class="table-head"><span>Игрок</span><span>Итог</span></div>
+      <div id="usersList">Загрузка…</div>
+    </div>
+  </div>
+
+  <div id="tab-games" class="tab hidden">
+    <div class="subnav">
+      <button data-sub="roulette" class="active">Рулетка</button>
+      <button data-sub="onezero">One or Zero</button>
+      <button data-sub="blackjack">Blackjack</button>
+    </div>
+
+    <div id="sub-roulette" class="subtab active">
+      <div class="card">
+        <div class="window"><div class="reel" id="reel"></div><div class="center-line"></div></div>
+
+        <div class="card-label">Тип ставки</div>
+        <div class="chip-row" id="rTypeRow">
+          <button class="chip" data-type="number">Число ×36</button>
+          <button class="chip" data-type="color">Цвет ×2</button>
+          <button class="chip" data-type="even_odd">Чёт/нечет ×2</button>
+          <button class="chip" data-type="half">Половина ×2</button>
+          <button class="chip" data-type="dozen">Дюжина ×3</button>
+          <button class="chip" data-type="column">Колонка ×3</button>
+        </div>
+
+        <div class="card-label">Значение</div>
+        <div id="rValuePicker"></div>
+
+        <div class="card-label">Ставка</div>
+        <div class="chip-row" id="rAmountRow"></div>
+
+        <button class="action" id="rPlay">ИГРАТЬ</button>
+        <div class="result" id="rResult"></div>
+      </div>
+    </div>
+
+    <div id="sub-onezero" class="subtab">
+      <div class="card">
+        <div class="oz-reveal">
+          <div class="oz-cell" id="ozCell0">0</div>
+          <div class="oz-cell" id="ozCell1">1</div>
+        </div>
+        <div class="card-label">Твой выбор</div>
+        <div class="oz-box"><button id="ozZero" data-v="0">0</button><button id="ozOne" data-v="1">1</button></div>
+        <div class="card-label">Ставка</div>
+        <div class="chip-row" id="ozAmountRow"></div>
+        <button class="action" id="ozPlay">ИГРАТЬ (×2)</button>
+        <div class="result" id="ozResult"></div>
+      </div>
+    </div>
+
+    <div id="sub-blackjack" class="subtab">
+      <div class="card">
+        <div class="card-label">Вызвать игрока</div>
+        <div class="chip-row" id="bjPlayersRow"><span class="muted">Загрузка…</span></div>
+        <div class="card-label">Ставка</div>
+        <div class="chip-row" id="bjAmountRow"></div>
+        <button class="action secondary" id="bjChallengeBtn">Бросить вызов</button>
+        <div class="muted" id="bjChallengeOut"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Входящие вызовы</div>
+        <div id="bjPending" class="muted">Обновляется…</div>
+      </div>
+      <div class="card hidden" id="bjGameCard">
+        <div class="card-label">Игра</div>
+        <div class="muted">Твоя рука (<span id="bjMyVal">0</span>)<span class="busted-tag hidden" id="bjMyBustedTag">Перебор</span></div>
+        <div class="card-hand" id="bjMyHand"></div>
+        <div class="muted" style="margin-top:10px;">Рука соперника (<span id="bjOppVal">?</span>)<span class="busted-tag hidden" id="bjOppBustedTag">Перебор</span></div>
+        <div class="card-hand" id="bjOppHand"></div>
+        <button class="action secondary" id="bjHit">Взять карту</button>
+        <button class="action" id="bjStand">Стоп</button>
+        <div class="result" id="bjResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-faq" class="tab hidden">
+    <details class="card faq-card" open><summary>Это виртуальная валюта</summary>
+      <p>Все монеты, ставки и выигрыши на этом сайте — виртуальные игровые единицы. Настоящие деньги нигде не используются, не принимаются и не выводятся. Сайт не побуждает и не поощряет азартные игры на реальные деньги.</p></details>
+    <details class="card faq-card"><summary>Рулетка</summary>
+      <p>Число — ×36. Цвет (red/black), чёт/нечет, половина 1-18/19-36 — ×2. Дюжина, колонка — ×3. Зеро (0) — выигрывает только ставка на само число 0.</p></details>
+    <details class="card faq-card"><summary>One or Zero</summary>
+      <p>Выбираешь 1 или 0, крутится барабан. Угадал — забираешь ×2 от ставки.</p></details>
+    <details class="card faq-card"><summary>Blackjack (без крупье)</summary>
+      <p>Играется только против другого игрока сайта. Отправляешь вызов из вкладки Игры — у соперника 5 минут принять или отклонить. Карты соперника скрыты, пока игра не завершится. Если перебрали оба — ничья.</p></details>
+    <details class="card faq-card"><summary>Ставки</summary>
+      <p>Диапазон ставок для каждой игры устанавливает владелец сайта — актуальные лимиты видно прямо на кнопках выбора суммы. Все игры — честный случайный результат без подкруток.</p></details>
+  </div>
+
+</div>
+
+<div class="disclaimer">⚠️ Все игры на этом сайте виртуальные. Реальные деньги не используются и не выводятся. Администрация сайта не поощряет и не призывает к азартным играм на реальные средства.</div>
+
+<div id="loginModal" class="modal-bg">
+  <div class="modal">
+    <div class="marquee" style="font-size:18px; display:block; text-align:center; margin-bottom:16px;">Вход</div>
+    <label class="muted">Ник</label><input id="loginNick" type="text" placeholder="Твой ник">
+    <label class="muted">ID (18 цифр)</label><input id="loginId" type="text" inputmode="numeric" placeholder="Выданный владельцем ID">
+    <div id="err"></div>
+    <button class="action secondary" id="loginBtn">Войти</button>
+  </div>
+</div>
+
+</div>
+
+<!-- ================= АДМИН (только по адресу ...#admin) ================= -->
+<div id="adminWrap" class="hidden wrap">
+  <h1 style="color:var(--ice-bright); text-align:center; font-weight:800;">🔑 Панель владельца</h1>
+  <div id="gate" class="card">
+    <label class="muted">Ключ владельца</label>
+    <input id="ownerKey" type="password" placeholder="Твой секретный ключ">
+    <button class="action secondary" id="enterBtn">Войти</button>
+  </div>
+  <div id="panel" class="hidden">
+    <div class="card">
+      <div class="card-label">Создать аккаунт</div>
+      <input id="createNick" placeholder="Ник игрока">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin:8px 0;">
+        <input type="checkbox" id="createIsOwner" style="width:auto; margin:0;"> Это мой аккаунт (без проверки баланса)
+      </label>
+      <button class="action secondary" id="createBtn">Создать и получить ID</button>
+      <div class="out" id="createOut"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Лимиты ставок</div>
+      <div class="settings-row"><span class="lbl">Рулетка</span><input id="setRouletteMin" type="number" placeholder="мин"><input id="setRouletteMax" type="number" placeholder="макс"></div>
+      <div class="settings-row"><span class="lbl">One or Zero</span><input id="setOnezeroMin" type="number" placeholder="мин"><input id="setOnezeroMax" type="number" placeholder="макс"></div>
+      <div class="settings-row"><span class="lbl">Blackjack</span><input id="setBlackjackMin" type="number" placeholder="мин"><input id="setBlackjackMax" type="number" placeholder="макс"></div>
+      <button class="action secondary" id="saveSettingsBtn">Сохранить лимиты</button>
+      <div class="out" id="settingsOut"></div>
+    </div>
+
+    <div class="card table-card">
+      <div class="card-label" style="padding-top:10px;">Все аккаунты</div>
+      <div class="table-head"><span>Игрок</span><span>Действия</span></div>
+      <div id="adminUsersList" class="muted" style="padding:12px 0;">Загрузка…</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Уведомления о выводах</div>
+      <button class="action" id="refreshNotif" style="margin-top:0;">Обновить</button>
+      <div id="notifList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://casino-api.dedcount.workers.dev';
+  const $ = (s) => document.querySelector(s);
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function api(path, opts = {}) {
+    const res = await fetch(API_BASE + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка запроса');
+    return data;
+  }
+
+  // ============================================================
+  // Фоновая анимация — лёгкие ледяные частицы на canvas
+  // ============================================================
+  (function bg(){
+    const canvas = $('#bgCanvas'); const ctx = canvas.getContext('2d');
+    let w, h, particles = [];
+    function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
+    const N = Math.min(46, Math.floor((innerWidth*innerHeight)/26000));
+    for(let i=0;i<N;i++){
+      particles.push({
+        x: Math.random()*w, y: Math.random()*h, r: 1+Math.random()*2.4,
+        vy: 0.12+Math.random()*0.28, vx: (Math.random()-0.5)*0.15,
+        a: 0.08+Math.random()*0.22, tw: Math.random()*Math.PI*2,
+      });
+    }
+    function frame(){
+      ctx.clearRect(0,0,w,h);
+      for(const p of particles){
+        p.y -= p.vy; p.x += p.vx; p.tw += 0.02;
+        if(p.y < -6){ p.y = h+6; p.x = Math.random()*w; }
+        const alpha = p.a * (0.6+0.4*Math.sin(p.tw));
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(180,230,255,${alpha})`;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    frame();
+  })();
+
+  if (location.hash === '#admin') {
+    document.getElementById('publicWrap').classList.add('hidden');
+    document.getElementById('adminWrap').classList.remove('hidden');
+    initAdmin();
+  } else {
+    initPublic();
+  }
+
+  // ============================================================
+  // ПУБЛИЧНАЯ ЧАСТЬ
+  // ============================================================
+  async function initPublic(){
+    let me = null;
+    let settings = { roulette:{min:1,max:50}, onezero:{min:1,max:50}, blackjack:{min:1,max:50} };
+    try{ settings = await api('/api/settings'); }catch(e){}
+
+    function fmtCoins(n){ return `${Number(n).toLocaleString('ru-RU')} 🪙`; }
+    function fmtBucks(coinAmount){
+      const bucks = coinAmount * 10000000;
+      const sign = bucks > 0 ? '+' : (bucks < 0 ? '-' : '');
+      return `${sign}$${Math.abs(bucks).toLocaleString('ru-RU')}`;
+    }
+    function renderProfile(u){
+      $('#profileNick').textContent = u.nickname;
+      $('#profileId').textContent = 'ID: ' + u.id;
+      $('#pBalance').textContent = fmtCoins(u.balance);
+      $('#pWins').textContent = u.wins;
+      $('#pLosses').textContent = u.losses;
+      const netEl = $('#pNet');
+      netEl.textContent = fmtBucks(u.net_profit);
+      netEl.className = 'n ' + (u.net_profit>0?'plus':(u.net_profit<0?'minus':''));
+      $('#pLudoman').textContent = u.ludoman_balance;
+      startLudomanTimer(u.ludoman_last_claim);
+    }
+    let ludomanTimerInterval = null;
+    function startLudomanTimer(lastClaimIso){
+      if(ludomanTimerInterval) clearInterval(ludomanTimerInterval);
+      const nextAt = lastClaimIso ? new Date(lastClaimIso).getTime() + 24*60*60*1000 : 0;
+      function tick(){
+        const left = nextAt - Date.now();
+        if(left <= 0){
+          $('#ludomanTimer').textContent = '✅ Можно забрать монету прямо сейчас';
+          $('#claimBtn').disabled = false;
+          clearInterval(ludomanTimerInterval);
+          return;
+        }
+        const h = String(Math.floor(left/3600000)).padStart(2,'0');
+        const m = String(Math.floor((left%3600000)/60000)).padStart(2,'0');
+        const s = String(Math.floor((left%60000)/1000)).padStart(2,'0');
+        $('#ludomanTimer').textContent = `⏳ Следующая монета через ${h}:${m}:${s}`;
+        $('#claimBtn').disabled = true;
+      }
+      tick();
+      ludomanTimerInterval = setInterval(tick, 1000);
+    }
+    async function refreshProfile(){ const u = await api('/api/profile?id='+encodeURIComponent(me.id)); me=u; renderProfile(u); }
+    async function loadUsers(){
+      const list = await api('/api/users');
+      $('#usersList').innerHTML = list.map(u=>{
+        const bucks=u.net_profit*10000000, cls=bucks>0?'plus':(bucks<0?'minus':''), sign=bucks>0?'+':(bucks<0?'-':'');
+        return `<div class="user-row"><span>${esc(u.nickname)}</span><span class="pill ${cls}">${sign}$${Math.abs(bucks).toLocaleString('ru-RU')}</span></div>`;
+      }).join('') || '<div class="muted">Пока никого нет</div>';
+    }
+
+    let pollingPaused = false;
+    document.addEventListener('visibilitychange', () => { pollingPaused = document.hidden; });
+
+    document.querySelectorAll('#nav button[data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#nav button[data-tab]').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
+        $('#tab-'+btn.dataset.tab).classList.remove('hidden');
+        if (btn.dataset.tab==='users') loadUsers();
+        if (btn.dataset.tab==='games') loadBjPlayers();
+      });
+    });
+
+    $('#loginBtn').addEventListener('click', async ()=>{
+      const nickname=$('#loginNick').value.trim(), id=$('#loginId').value.trim();
+      $('#err').textContent='';
+      try{
+        const u = await api('/api/login',{method:'POST',body:JSON.stringify({nickname,id})});
+        me=u;
+        localStorage.setItem('casino_id',id); localStorage.setItem('casino_nick',nickname);
+        $('#loginModal').classList.add('hidden');
+        renderProfile(u);
+      }catch(e){ $('#err').textContent=e.message; }
+    });
+    function doLogout(){ localStorage.removeItem('casino_id'); localStorage.removeItem('casino_nick'); location.reload(); }
+    $('#logoutBtn').addEventListener('click', doLogout);
+    $('#logoutBtn2').addEventListener('click', doLogout);
+
+    $('#claimBtn').addEventListener('click', async ()=>{
+      try{ await api('/api/claim-ludoman',{method:'POST',body:JSON.stringify({id:me.id})});
+        $('#claimNote').textContent='Монета зачислена!'; await refreshProfile();
+      }catch(e){ $('#claimNote').textContent=e.message; }
+    });
+    $('#withdrawBtn').addEventListener('click', async ()=>{
+      const amount=Number(prompt('Сколько монет вывести?')); if(!amount||amount<=0) return;
+      if(!confirm(`Точно вывести ${amount} монет?`)) return;
+      try{ await api('/api/withdraw',{method:'POST',body:JSON.stringify({id:me.id,amount})}); alert('Вывод оформлен.'); await refreshProfile(); }
+      catch(e){ alert(e.message); }
+    });
+    $('#withdrawLudomanBtn').addEventListener('click', async ()=>{
+      if(!confirm('Вывести все монеты лудомана?')) return;
+      try{ await api('/api/withdraw-ludoman',{method:'POST',body:JSON.stringify({id:me.id})}); alert('Вывод оформлен.'); await refreshProfile(); }
+      catch(e){ alert(e.message); }
+    });
+
+    document.querySelectorAll('.subnav button').forEach(b=>b.addEventListener('click', ()=>{
+      document.querySelectorAll('.subnav button').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      $('#sub-'+b.dataset.sub).classList.add('active');
+      if (b.dataset.sub==='blackjack') loadBjPlayers();
+    }));
+
+    function buildAmountOptions(min, max){
+      const opts = new Set([min, max]);
+      const steps = 5;
+      for(let i=1;i<steps;i++) opts.add(Math.round(min + (max-min)*i/steps));
+      return [...opts].filter(v=>v>=min && v<=max).sort((a,b)=>a-b);
+    }
+    function buildAmountChips(rowId, min, max){
+      const row = $('#'+rowId);
+      const opts = buildAmountOptions(min, max);
+      row.innerHTML = opts.map(a=>`<button type="button" class="chip" data-a="${a}">${a} 🪙</button>`).join('');
+      let current = opts[0];
+      row.querySelectorAll('.chip').forEach((btn,i)=>{
+        if(i===0) btn.classList.add('selected');
+        btn.addEventListener('click', ()=>{
+          row.querySelectorAll('.chip').forEach(x=>x.classList.remove('selected'));
+          btn.classList.add('selected'); current = Number(btn.dataset.a);
+        });
+      });
+      return () => current;
+    }
+
+    // ---- Рулетка ----
+    const reelOrder=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+    const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+    function colorOf(n){return n===0?'green':(RED.has(n)?'red':'black');}
+    const CELL=60, WIN_H=180, REPEATS=8;
+    const reel=$('#reel');
+    for(let r=0;r<REPEATS;r++) reelOrder.forEach(n=>{ const c=document.createElement('div'); c.className='cell '+colorOf(n); c.textContent=n; reel.appendChild(c); });
+    function ty(i){ return WIN_H/2-(i*CELL+CELL/2); }
+    let reelIndex=0; reel.style.transform=`translateY(${ty(0)}px)`;
+    function spinReelTo(landed, cb){
+      const idx=reelOrder.indexOf(landed), loops=3;
+      const remainder=(idx-reelIndex+reelOrder.length)%reelOrder.length;
+      const newIndex=reelIndex+loops*reelOrder.length+remainder;
+      reel.style.transition='transform 3.2s cubic-bezier(0.13,0.83,0.13,1)';
+      reel.style.transform=`translateY(${ty(newIndex)}px)`;
+      setTimeout(()=>{ reel.style.transition='none'; reel.style.transform=`translateY(${ty(idx)}px)`; reelIndex=idx; void reel.offsetWidth; cb(); },3300);
+    }
+
+    let rType='number', rValue=null;
+    const getRAmount = buildAmountChips('rAmountRow', settings.roulette.min, settings.roulette.max);
+
+    function renderValuePicker(){
+      const el = $('#rValuePicker');
+      rValue = null;
+      if (rType==='number'){
+        el.innerHTML = `<div class="num-grid" id="numGrid"></div>`;
+        const grid = $('#numGrid');
+        for(let n=0;n<=36;n++){
+          const b=document.createElement('button'); b.type='button';
+          b.className='num-chip '+colorOf(n); b.textContent=n; b.dataset.v=n;
+          b.addEventListener('click', ()=>{ grid.querySelectorAll('.num-chip').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); rValue=String(n); });
+          grid.appendChild(b);
+        }
+      } else {
+        const options = {
+          color: [['red','Красное'],['black','Чёрное']],
+          even_odd: [['even','Чёт'],['odd','Нечет']],
+          half: [['low','1–18'],['high','19–36']],
+          dozen: [['1','1-я дюжина'],['2','2-я дюжина'],['3','3-я дюжина']],
+          column: [['1','Колонка 1'],['2','Колонка 2'],['3','Колонка 3']],
+        }[rType];
+        el.innerHTML = `<div class="chip-row">${options.map(([v,label])=>`<button type="button" class="chip wide" data-v="${v}">${label}</button>`).join('')}</div>`;
+        el.querySelectorAll('.chip').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            el.querySelectorAll('.chip').forEach(x=>x.classList.remove('selected'));
+            btn.classList.add('selected'); rValue = btn.dataset.v;
+          });
+        });
+      }
+    }
+    document.querySelectorAll('#rTypeRow .chip').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#rTypeRow .chip').forEach(x=>x.classList.remove('selected'));
+        btn.classList.add('selected'); rType = btn.dataset.type; renderValuePicker();
+      });
+    });
+    document.querySelector('#rTypeRow .chip[data-type="number"]').classList.add('selected');
+    renderValuePicker();
+
+    $('#rPlay').addEventListener('click', async ()=>{
+      if(!me) return alert('Сначала войди');
+      if(rValue===null){ $('#rResult').textContent='Выбери значение ставки'; $('#rResult').className='result lose'; return; }
+      $('#rPlay').disabled=true; $('#rResult').textContent=''; $('#rResult').className='result';
+      try{
+        const r=await api('/api/bet/roulette',{method:'POST',body:JSON.stringify({id:me.id,type:rType,value:rValue,amount:getRAmount()})});
+        spinReelTo(r.landed, ()=>{
+          const res=$('#rResult');
+          res.textContent = r.win?`🟢 Победа! +${r.payout} 🪙`:`🔴 Поражение. Выпало ${r.landed}`;
+          res.className='result '+(r.win?'win':'lose');
+          $('#rPlay').disabled=false;
+        });
+      }catch(e){ $('#rResult').textContent=e.message; $('#rPlay').disabled=false; }
+    });
+
+    // ---- One or Zero ----
+    let ozChoice=null;
+    const getOzAmount = buildAmountChips('ozAmountRow', settings.onezero.min, settings.onezero.max);
+    $('#ozZero').addEventListener('click', ()=>{ ozChoice='0'; $('#ozZero').classList.add('selected'); $('#ozOne').classList.remove('selected'); });
+    $('#ozOne').addEventListener('click', ()=>{ ozChoice='1'; $('#ozOne').classList.add('selected'); $('#ozZero').classList.remove('selected'); });
+
+    function ozRevealAnimate(landed, win, cb){
+      const cells=[$('#ozCell0'), $('#ozCell1')];
+      cells.forEach(c=>c.className='oz-cell');
+      let tick=0; const total=16;
+      (function step(){
+        cells.forEach(c=>c.classList.remove('flash'));
+        cells[tick%2].classList.add('flash');
+        tick++;
+        if(tick<total){ setTimeout(step, 55+tick*13); }
+        else{
+          cells.forEach(c=>c.classList.remove('flash'));
+          cells[Number(landed)].classList.add(win?'landed-win':'landed-lose');
+          cb();
+        }
+      })();
+    }
+
+    $('#ozPlay').addEventListener('click', async ()=>{
+      if(!me) return alert('Сначала войди');
+      if(ozChoice===null){ $('#ozResult').textContent='Выбери 0 или 1'; $('#ozResult').className='result lose'; return; }
+      $('#ozPlay').disabled=true; $('#ozResult').textContent='';
+      try{
+        const r=await api('/api/bet/onezero',{method:'POST',body:JSON.stringify({id:me.id,choice:ozChoice,amount:getOzAmount()})});
+        ozRevealAnimate(r.landed, r.win, ()=>{
+          const res=$('#ozResult');
+          res.textContent = r.win?`🟢 Выпало ${r.landed}. Победа! +${r.payout} 🪙`:`🔴 Выпало ${r.landed}. Поражение.`;
+          res.className='result '+(r.win?'win':'lose');
+          $('#ozPlay').disabled=false;
+        });
+      }catch(e){ $('#ozResult').textContent=e.message; $('#ozPlay').disabled=false; }
+    });
+
+    // ---- Blackjack ----
+    let bjOpponent=null;
+    const getBjAmount = buildAmountChips('bjAmountRow', settings.blackjack.min, settings.blackjack.max);
+    async function loadBjPlayers(){
+      if(!me) return;
+      try{
+        const list = await api('/api/users');
+        const others = list.filter(u=>u.nickname!==me.nickname);
+        const row = $('#bjPlayersRow');
+        row.innerHTML = others.length ? others.map(u=>`<button type="button" class="chip" data-n="${esc(u.nickname)}">${esc(u.nickname)}</button>`).join('') : '<span class="muted">Пока некого вызвать</span>';
+        row.querySelectorAll('.chip').forEach(btn=>{
+          btn.addEventListener('click', ()=>{ row.querySelectorAll('.chip').forEach(x=>x.classList.remove('selected')); btn.classList.add('selected'); bjOpponent=btn.dataset.n; });
+        });
+      }catch(e){}
+    }
+    $('#bjChallengeBtn').addEventListener('click', async ()=>{
+      if(!me) return alert('Сначала войди');
+      if(!bjOpponent){ $('#bjChallengeOut').textContent='Выбери соперника'; return; }
+      try{
+        const r=await api('/api/blackjack/challenge',{method:'POST',body:JSON.stringify({from_id:me.id,to_nickname:bjOpponent,bet:getBjAmount()})});
+        $('#bjChallengeOut').textContent='Вызов отправлен, ждём ответа (до 5 минут)…';
+        pollChallengeStatus(r.challenge_id);
+      }catch(e){ $('#bjChallengeOut').textContent=e.message; }
+    });
+    function pollChallengeStatus(cid){
+      const iv=setInterval(async ()=>{
+        try{
+          const c=await api('/api/blackjack/challenge-status?challenge_id='+cid+'&id='+encodeURIComponent(me.id));
+          if(c.status==='accepted'){ clearInterval(iv); $('#bjChallengeOut').textContent='Принято!'; openGame(c.game_id); }
+          else if(c.status==='declined'){ clearInterval(iv); $('#bjChallengeOut').textContent='Соперник отклонил вызов.'; }
+          else if(c.status==='expired'){ clearInterval(iv); $('#bjChallengeOut').textContent='Время вызова истекло.'; }
+        }catch(e){}
+      },3000);
+    }
+    async function loadPending(){
+      if(!me || pollingPaused) return;
+      try{
+        const list=await api('/api/blackjack/pending?id='+me.id);
+        $('#bjPending').innerHTML = list.length ? list.map(c=>`
+          <div class="challenge"><b>${esc(c.from_nickname)}</b> вызывает на ${c.bet} 🪙
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="action secondary small" onclick="respondChallenge(${c.id},true)">Принять</button>
+              <button class="action small" onclick="respondChallenge(${c.id},false)">Отклонить</button>
+            </div></div>`).join('') : '<div class="muted">Пока никто не вызывал</div>';
+      }catch(e){}
+    }
+    window.respondChallenge = async (cid, accept)=>{
+      try{ const r=await api('/api/blackjack/respond',{method:'POST',body:JSON.stringify({challenge_id:cid,id:me.id,accept})});
+        if(r.accepted) openGame(r.game_id); loadPending();
+      }catch(e){ alert(e.message); }
+    };
+    setInterval(loadPending, 20000);
+
+    let currentGameId=null;
+    function openGame(gid){
+      currentGameId=gid; $('#bjGameCard').classList.remove('hidden');
+      document.querySelectorAll('#nav button[data-tab]').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
+      document.querySelector('#nav button[data-tab="games"]').classList.add('active');
+      $('#tab-games').classList.remove('hidden');
+      document.querySelectorAll('.subnav button').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
+      document.querySelector('.subnav button[data-sub="blackjack"]').classList.add('active');
+      $('#sub-blackjack').classList.add('active');
+      refreshGame();
+    }
+    async function refreshGame(){
+      if(!currentGameId || !me || pollingPaused) return;
+      try{
+        const g=await api(`/api/blackjack/state?game_id=${currentGameId}&id=${me.id}`);
+        $('#bjMyHand').innerHTML = g.myHand.map(c=>`<div class="playing-card">${esc(c)}</div>`).join('');
+        $('#bjMyVal').textContent = g.myValue;
+        $('#bjMyBustedTag').classList.toggle('hidden', !g.myBusted);
+
+        if(g.oppHand){
+          $('#bjOppHand').innerHTML = g.oppHand.map(c=>`<div class="playing-card">${esc(c)}</div>`).join('');
+          $('#bjOppVal').textContent = g.oppValue;
+        } else {
+          $('#bjOppHand').innerHTML = Array.from({length:g.oppHandCount}).map(()=>'<div class="playing-card back"></div>').join('');
+          $('#bjOppVal').textContent = '?';
+        }
+        $('#bjOppBustedTag').classList.toggle('hidden', !g.oppBusted);
+
+        const myTurn = g.myTurn;
+        $('#bjHit').disabled=!myTurn; $('#bjStand').disabled=!myTurn;
+        if(g.status==='finished'){
+          const res=$('#bjResult');
+          if(g.outcome==='push'){ res.textContent='Ничья — ставки возвращены.'; res.className='result'; }
+          else{ const iWon=g.outcome==='win'; res.textContent=iWon?'🟢 Ты выиграл!':'🔴 Ты проиграл.'; res.className='result '+(iWon?'win':'lose'); }
+        }else{ $('#bjResult').textContent = myTurn?'Твой ход':'Ход соперника…'; $('#bjResult').className='result'; }
+      }catch(e){}
+    }
+    setInterval(refreshGame, 2500);
+    $('#bjHit').addEventListener('click', async ()=>{ try{ await api('/api/blackjack/hit',{method:'POST',body:JSON.stringify({game_id:currentGameId,id:me.id})}); refreshGame(); }catch(e){ alert(e.message); } });
+    $('#bjStand').addEventListener('click', async ()=>{ try{ await api('/api/blackjack/stand',{method:'POST',body:JSON.stringify({game_id:currentGameId,id:me.id})}); refreshGame(); }catch(e){ alert(e.message); } });
+
+    (async ()=>{
+      const savedId=localStorage.getItem('casino_id'), savedNick=localStorage.getItem('casino_nick');
+      if(savedId && savedNick){
+        try{ me=await api('/api/login',{method:'POST',body:JSON.stringify({nickname:savedNick,id:savedId})}); $('#loginModal').classList.add('hidden'); renderProfile(me); }
+        catch(e){ $('#loginModal').classList.remove('hidden'); }
+      }
+      loadPending();
+    })();
+  }
+
+  // ============================================================
+  // АДМИН-ЧАСТЬ
+  // ============================================================
+  function initAdmin(){
+    let ownerKey='';
+    async function adminApi(path, opts={}){
+      const res=await fetch(API_BASE+path,{...opts, headers:{'Content-Type':'application/json','x-owner-key':ownerKey, ...(opts.headers||{})}});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.error||'Ошибка');
+      return data;
+    }
+    $('#enterBtn').addEventListener('click', async ()=>{
+      ownerKey=$('#ownerKey').value;
+      try{ await adminApi('/admin/notifications'); $('#gate').classList.add('hidden'); $('#panel').classList.remove('hidden');
+        loadNotifications(); loadAdminUsers(); loadSettingsForm();
+      }catch(e){ alert('Неверный ключ или Worker недоступен: '+e.message); }
+    });
+    $('#createBtn').addEventListener('click', async ()=>{
+      try{
+        const r=await adminApi('/admin/create',{method:'POST',body:JSON.stringify({nickname:$('#createNick').value.trim(), isOwnerAccount:$('#createIsOwner').checked})});
+        $('#createOut').textContent=`Готово! Ник: ${r.nickname}\nID: ${r.id}\n(передай этот ID игроку)`;
+        loadAdminUsers();
+      }catch(e){ $('#createOut').textContent='Ошибка: '+e.message; }
+    });
+
+    async function loadSettingsForm(){
+      try{
+        const s = await api('/api/settings');
+        $('#setRouletteMin').value=s.roulette.min; $('#setRouletteMax').value=s.roulette.max;
+        $('#setOnezeroMin').value=s.onezero.min; $('#setOnezeroMax').value=s.onezero.max;
+        $('#setBlackjackMin').value=s.blackjack.min; $('#setBlackjackMax').value=s.blackjack.max;
+      }catch(e){}
+    }
+    $('#saveSettingsBtn').addEventListener('click', async ()=>{
+      const jobs = [
+        ['roulette', Number($('#setRouletteMin').value), Number($('#setRouletteMax').value)],
+        ['onezero', Number($('#setOnezeroMin').value), Number($('#setOnezeroMax').value)],
+        ['blackjack', Number($('#setBlackjackMin').value), Number($('#setBlackjackMax').value)],
+      ];
+      try{
+        for(const [game,min,max] of jobs){
+          await adminApi('/admin/settings',{method:'POST',body:JSON.stringify({game,min,max})});
+        }
+        $('#settingsOut').textContent='Сохранено!';
+      }catch(e){ $('#settingsOut').textContent='Ошибка: '+e.message; }
+    });
+
+    async function loadAdminUsers(){
+      try{
+        const list = await adminApi('/admin/users');
+        $('#adminUsersList').innerHTML = list.length ? list.map(u=>`
+          <div class="user-row">
+            <span>${esc(u.nickname)}${u.is_owner?' 👑':''}<br><span class="muted" style="font-size:11px;">${Number(u.balance).toLocaleString('ru-RU')} 🪙</span></span>
+            <span style="display:flex; gap:6px;">
+              <button class="icon-btn mint" onclick="giveTo('${u.id}','${esc(u.nickname).replace(/'/g,"\\'")}')" title="Выдать">＋</button>
+              <button class="icon-btn danger" onclick="deleteUser('${u.id}','${esc(u.nickname).replace(/'/g,"\\'")}')" title="Удалить">✕</button>
+            </span>
+          </div>`).join('') : '<div class="muted">Аккаунтов пока нет</div>';
+      }catch(e){ $('#adminUsersList').textContent='Ошибка: '+e.message; }
+    }
+    window.giveTo = async (id, nickname)=>{
+      const amount = Number(prompt(`Сколько монет выдать «${nickname}»? (отрицательное — списать)`));
+      if(!amount) return;
+      try{ await adminApi('/admin/give',{method:'POST',body:JSON.stringify({id,amount})}); loadAdminUsers(); }
+      catch(e){ alert('Ошибка: '+e.message); }
+    };
+    window.deleteUser = async (id, nickname)=>{
+      if(!confirm(`Точно удалить аккаунт «${nickname}»?`)) return;
+      try{ await adminApi('/admin/delete',{method:'POST',body:JSON.stringify({id})}); loadAdminUsers(); }
+      catch(e){ alert('Ошибка: '+e.message); }
+    };
+
+    async function loadNotifications(){
+      const list=await adminApi('/admin/notifications');
+      $('#notifList').innerHTML = list.map(n=>`
+        <div class="notif"><span>${esc(n.message)}<br><small>${esc(n.created_at)}</small></span>
+          <button class="icon-btn danger" onclick="deleteNotif(${n.id})">✕</button></div>`).join('') || '<div class="out">Пусто</div>';
+    }
+    window.deleteNotif = async (id)=>{ await adminApi('/admin/notifications/'+id,{method:'DELETE'}); loadNotifications(); };
+    $('#refreshNotif').addEventListener('click', loadNotifications);
+  }
+</script>
+
+</body>
+</html>
