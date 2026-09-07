@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milky Corporations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --void:#070911; --panel:rgba(255,255,255,.038); --panel-strong:rgba(255,255,255,.075);
+    --border:rgba(170,210,255,.13); --border-strong:rgba(170,210,255,.26);
+    --text:#eef3f9; --muted:#7c8aa0;
+    --accent:#7fd6ff; --accent-deep:#2f7fa8; --accent-bright:#e8f8ff;
+    --emerald:#4be6a8; --emerald-deep:#1a7a56; --emerald-bright:#d8fff0;
+    --gold:#f0c15c; --orange:#ff9f4a; --purple:#b98bff;
+    --danger:#ff7a8a;
+  }
+  html[data-theme="emerald"]{ --accent:#4be6a8; --accent-deep:#1a7a56; --accent-bright:#d8fff0; }
+  html[data-theme="purple"]{ --accent:#b98bff; --accent-deep:#6a3fc9; --accent-bright:#efe4ff; }
+  html[data-theme="red"]{ --accent:#ff7a8a; --accent-deep:#a52c3d; --accent-bright:#ffe1e5; }
+  html[data-theme="gold"]{ --accent:#f0c15c; --accent-deep:#a9791b; --accent-bright:#fff2d6; }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{margin:0; min-height:100vh; position:relative; overflow-x:hidden; background:
+      radial-gradient(ellipse 900px 480px at 15% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 20%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 55%),
+      var(--void);
+    color:var(--text); font-family:'Manrope',-apple-system,'Segoe UI',Arial,sans-serif; padding-bottom:60px;}
+  #snowCanvas{position:fixed; inset:0; z-index:0; pointer-events:none;}
+
+  header{position:relative; z-index:1; display:flex; align-items:center; gap:14px; padding:18px 20px 26px;
+    max-width:1080px; margin:0 auto; flex-wrap:wrap; border-bottom:1px solid var(--border);}
+  .icicles{position:absolute; left:0; right:0; bottom:-1px; height:14px; display:flex; z-index:1; pointer-events:none;}
+  .icicles svg{flex:1; height:100%; display:block;}
+
+  .logo{display:flex; align-items:center; gap:11px; margin-right:auto;}
+  .logo svg{width:36px; height:36px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}
+  .logo-text{font-weight:800; font-size:16px; letter-spacing:.2px;}
+  .logo-sub{font-size:9.5px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-top:1px;}
+
+  .profile-chip{display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:6px 14px 6px 6px; font-size:12.5px;}
+  .profile-chip .chip-avatar{width:28px; height:28px; border-radius:9px; background:linear-gradient(160deg, var(--accent-bright), var(--accent) 60%, var(--accent-deep));
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:#04141a;}
+  .profile-chip .chip-name{font-weight:700;}
+  button.ghost-small{background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:10px;
+    padding:7px 13px; font-size:12px; font-family:inherit; cursor:pointer; transition:border-color .15s, color .15s;}
+  button.ghost-small:hover{border-color:var(--border-strong); color:var(--text);}
+
+  nav{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 20px; display:flex; gap:2px;
+    flex-wrap:wrap; border-bottom:1px solid var(--border);}
+  nav button{background:transparent; border:none; color:var(--muted); padding:13px 15px; font-size:12.5px; font-weight:600;
+    font-family:inherit; cursor:pointer; display:flex; align-items:center; gap:7px; border-bottom:2px solid transparent;
+    margin-bottom:-1px; transition:color .15s, border-color .15s;}
+  nav button svg{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.7;}
+  nav button:hover{color:var(--text);}
+  nav button.active{color:var(--accent-bright); border-bottom-color:var(--accent);}
+
+  .wrap{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:26px 20px 50px;}
+  .grid{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media(min-width:760px){ .grid{grid-template-columns:2fr 1fr;} }
+
+  .card{background:linear-gradient(165deg, var(--panel-strong), var(--panel)); backdrop-filter:blur(18px);
+    border:1px solid var(--border); border-radius:16px; padding:22px; position:relative; overflow:hidden;
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset;}
+  .welcome-card{margin-bottom:16px;}
+  .welcome-card .eyebrow{font-size:10.5px; letter-spacing:1.8px; text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
+  .welcome-card h1{margin:0 0 14px; font-size:27px; font-weight:800; letter-spacing:-.2px;}
+  .role-pill{display:inline-flex; align-items:center; gap:6px; background:color-mix(in srgb, var(--accent) 14%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 34%, transparent); color:var(--accent-bright);
+    padding:5px 13px; border-radius:8px; font-size:11px; font-weight:700; letter-spacing:.3px;}
+
+  .section-title{font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted);
+    margin:0 0 14px; display:flex; justify-content:space-between; align-items:center;}
+  .section-title button{background:linear-gradient(160deg, var(--emerald-bright), var(--emerald) 60%, var(--emerald-deep));
+    color:#042b1c; border:none; border-radius:9px; padding:7px 13px; font-size:11.5px; font-weight:700;
+    font-family:inherit; cursor:pointer; text-transform:none; letter-spacing:0;}
+
+  .news-item{border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:10px; background:rgba(255,255,255,.018);}
+  .news-item img{width:100%; border-radius:10px; margin-top:10px; display:block;}
+  .tag-pill{display:inline-block; padding:3px 11px; border-radius:7px; font-size:10px; font-weight:800; letter-spacing:.4px;
+    color:#04141a; background-size:220% 100%; animation:tagShimmer 4s linear infinite;}
+  @keyframes tagShimmer{0%{background-position:0% 0;}100%{background-position:-220% 0;}}
+  .news-title{font-weight:700; font-size:15px; margin:9px 0 5px;}
+  .news-body{font-size:13.5px; color:#c3ccd9; line-height:1.55;}
+  .news-empty{color:var(--muted); font-size:13px; text-align:center; padding:26px 0;}
+
+  .tech-card{display:flex; align-items:center; gap:12px; padding:13px; border-radius:14px;
+    background:linear-gradient(135deg, rgba(75,230,168,.10), rgba(26,122,86,.04)); border:1px solid rgba(75,230,168,.28);
+    margin-bottom:10px; position:relative; overflow:hidden;}
+  .tech-card::before{content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+    background-size:200% 100%; animation:shine 4s linear infinite;}
+  @keyframes shine{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .tech-avatar{width:38px; height:38px; border-radius:11px; background:linear-gradient(160deg, var(--emerald-bright), var(--emerald));
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:#042b1c; flex-shrink:0; z-index:1;}
+  .tech-name{font-weight:700; font-size:14px; z-index:1;}
+  .tech-badge{display:inline-block; margin-top:2px; font-size:10px; font-weight:800; color:#042b1c;
+    background:linear-gradient(160deg, var(--emerald-bright), var(--emerald) 60%, var(--emerald-deep));
+    padding:2px 9px; border-radius:7px; box-shadow:0 0 10px rgba(75,230,168,.45); z-index:1;}
+
+  .placeholder{text-align:center; color:var(--muted); padding:60px 20px; font-size:14px;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(3,5,10,.72); backdrop-filter:blur(5px); display:flex; align-items:center;
+    justify-content:center; padding:16px; z-index:50;}
+  .modal{background:linear-gradient(165deg, rgba(18,23,34,.96), rgba(9,12,19,.96)); border:1px solid var(--border-strong);
+    border-radius:18px; padding:24px; max-width:420px; width:100%; max-height:88vh; overflow-y:auto;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);}
+  .modal h2{margin:0 0 16px; font-size:16.5px; font-weight:800;}
+  .hidden{display:none !important;}
+  label{font-size:11.5px; color:var(--muted); display:block; margin:10px 0 4px; letter-spacing:.2px;}
+  input, select, textarea{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:rgba(255,255,255,.025); color:var(--text); font-family:inherit; font-size:13.5px;}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--border-strong);}
+  textarea{resize:vertical; min-height:80px;}
+  button.action{width:100%; margin-top:14px; padding:12px; border:none; border-radius:11px; font-weight:700;
+    font-family:inherit; font-size:13.5px; cursor:pointer; color:#04141a;
+    background:linear-gradient(160deg, var(--accent-bright), var(--accent) 55%, var(--accent-deep));}
+  .tag-choice{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+  .tag-choice button{border:none; padding:6px 12px; border-radius:7px; font-size:11px; font-weight:800; color:#04141a; cursor:pointer;
+    opacity:.5;}
+  .tag-choice button.selected{opacity:1; outline:2px solid #fff;}
+  #err{color:var(--danger); font-size:12.5px; min-height:14px; margin-top:6px;}
+
+  .section-divider{display:flex; align-items:center; gap:10px; margin:20px 0 12px; color:var(--muted); font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:1px;}
+  .section-divider::after{content:""; flex:1; height:1px; background:var(--border);}
+  .product-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px;}
+  .product-card{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px; position:relative;
+    transition:border-color .15s;}
+  .product-card:hover{border-color:var(--border-strong);}
+  .product-card img{width:100%; aspect-ratio:1; object-fit:cover; border-radius:9px; background:rgba(255,255,255,.04);}
+  .product-name{font-weight:700; font-size:13px; margin-top:9px;}
+  .product-price{color:var(--accent-bright); font-weight:800; font-size:13px; margin-top:2px;}
+  .product-desc{font-size:11.5px; color:var(--muted); margin-top:4px; max-height:32px; overflow:hidden;}
+  .product-out{position:absolute; inset:0; background:rgba(4,6,10,.72); display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:12px; border-radius:14px;}
+  .product-actions{display:flex; gap:6px; margin-top:9px;}
+  .btn-mini{flex:1; border:none; border-radius:8px; padding:7px; font-size:11.5px; font-weight:700; font-family:inherit; cursor:pointer;}
+  .btn-cart{background:linear-gradient(160deg, var(--accent-bright), var(--accent) 60%, var(--accent-deep)); color:#04141a;}
+  .btn-icon{width:28px; height:28px; flex:none; background:rgba(255,255,255,.045); border:1px solid var(--border); color:var(--muted); border-radius:8px; cursor:pointer;}
+
+  .cart-fab{position:fixed; bottom:22px; right:22px; width:54px; height:54px; border-radius:15px;
+    background:linear-gradient(165deg, var(--panel-strong), var(--panel)); backdrop-filter:blur(14px);
+    border:1px solid var(--border-strong); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:40; box-shadow:0 10px 26px rgba(0,0,0,.45);}
+  .cart-fab svg{width:22px; height:22px; stroke:var(--accent-bright); fill:none; stroke-width:1.7;}
+  .cart-badge{position:absolute; top:-5px; right:-5px; background:var(--danger); color:#fff; font-size:10px; font-weight:800;
+    border-radius:9px; padding:2px 6px; min-width:16px; text-align:center;}
+  .cart-item{display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12.5px;}
+  .cart-item .qty-ctrl{display:flex; align-items:center; gap:6px;}
+  .cart-item .qty-ctrl button{width:22px; height:22px; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:6px; cursor:pointer;}
+
+  table.data-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.data-table th{text-align:left; padding:11px 14px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border);}
+  table.data-table td{padding:11px 14px; border-bottom:1px solid rgba(255,255,255,.04);}
+  table.data-table tr:hover{background:rgba(255,255,255,.018); cursor:pointer;}
+  .status-pill{padding:3px 10px; border-radius:7px; font-size:10px; font-weight:800; color:#04141a; background-size:220% 100%; animation:tagShimmer 4s linear infinite;}
+  .status-pending{background-image:linear-gradient(100deg,#f0c15c,#fff8,#f0c15c);}
+  .status-approved{background-image:linear-gradient(100deg,#4be6a8,#fff8,#4be6a8);}
+  .status-rejected{background-image:linear-gradient(100deg,#ff7a8a,#fff8,#ff7a8a);}
+  .archive-card{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:15px; margin-bottom:10px;
+    transition:border-color .15s;}
+  .archive-card:hover{border-color:var(--border-strong);}
+  .confirm-actions{display:flex; gap:8px; margin-top:14px;}
+  .confirm-actions button{flex:1;}
+</style>
+</head>
+<body>
+
+<canvas id="snowCanvas"></canvas>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 40 40" fill="none">
+      <rect x="3" y="10" width="34" height="20" rx="6" fill="var(--accent)" opacity="0.92"/>
+      <path d="M14 10 L11.5 30 M26 10 L23.5 30" stroke="#04141a" stroke-width="1.3" opacity="0.28"/>
+      <rect x="3" y="10" width="34" height="9" rx="6" fill="#fff" opacity="0.22"/>
+      <rect x="3" y="10" width="34" height="20" rx="6" fill="none" stroke="#fff" stroke-opacity="0.18"/>
+    </svg>
+    <div><div class="logo-text">Milky Corporations</div><div class="logo-sub">Justice Marketplace</div></div>
+  </div>
+  <div class="profile-chip hidden" id="profileChip">
+    <span class="chip-avatar" id="chipAvatar">?</span><span class="chip-name" id="chipNick">—</span>
+  </div>
+  <button class="ghost-small notif-bell hidden" id="notifBell" style="position:relative;">
+    <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-3px;"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z M10 20a2 2 0 0 0 4 0"/></svg>
+    <span class="cart-badge hidden" id="notifBadge" style="top:-6px;right:-6px;">0</span>
+  </button>
+  <div id="notifPanel" class="hidden" style="position:absolute; top:70px; right:20px; width:300px; max-height:360px; overflow-y:auto; z-index:45;
+    background:linear-gradient(165deg, rgba(18,23,34,.97), rgba(9,12,19,.97)); border:1px solid var(--border-strong);
+    border-radius:14px; padding:12px; box-shadow:0 20px 50px rgba(0,0,0,.5);"></div>
+  <button class="ghost-small" id="logoutBtn">Выйти</button>
+  <div class="icicles" id="icicleRow"></div>
+</header>
+
+<nav id="nav">
+  <button data-tab="main" class="active"><svg viewBox="0 0 24 24"><path d="M4 11L12 4l8 7M6 10v9h12v-9"/></svg>Главная</button>
+  <button data-tab="shop"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11h-13L4 8Z M8 8V6a4 4 0 0 1 8 0v2"/></svg>Магазин</button>
+  <button data-tab="orders"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z M9 3v3h6V3 M9 10h6 M9 14h6"/></svg>Заказы</button>
+  <button data-tab="archive"><svg viewBox="0 0 24 24"><path d="M4 4h16v5H4z M5 9v11h14V9 M10 13h4"/></svg>Архив</button>
+  <button data-tab="tasks"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4 M4 4h16v16H4z"/></svg>Задания</button>
+  <button data-tab="themes"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-.5-1.5-1-2 .3-2 2-2h2a3 3 0 0 0 3-3c0-5-3.5-9-8-9Z"/></svg>Темы</button>
+  <button data-tab="admin" id="navAdmin" class="hidden"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>Панель</button>
+  <button data-tab="logs" id="navLogs" class="hidden"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z M15 3v4h4 M9 12h6 M9 16h6"/></svg>Логи</button>
+</nav>
+
+<div class="wrap">
+
+  <div id="tab-main" class="tab">
+    <div class="card welcome-card">
+      <div class="eyebrow">Добро пожаловать</div>
+      <h1 id="welcomeNick">—</h1>
+      <span class="role-pill" id="rolePill">USER</span>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="section-title">Последние обновления
+          <button id="addNewsBtn" class="hidden">+ Добавить новость</button>
+        </div>
+        <div id="newsList"><div class="news-empty">Загрузка…</div></div>
+      </div>
+      <div>
+        <div class="section-title">Команда разработки</div>
+        <div id="techList"><div class="news-empty">Загрузка…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-shop" class="tab hidden">
+    <div class="section-title">Магазин
+      <span style="display:flex; gap:6px;">
+        <button id="addSectionBtn" class="hidden">+ Раздел</button>
+        <button id="addProductBtn" class="hidden">+ Товар</button>
+      </span>
+    </div>
+    <div id="shopContent"><div class="news-empty">Загрузка…</div></div>
+  </div>
+
+  <div id="tab-orders" class="tab hidden">
+    <div class="section-title">Заказы (в реальном времени)</div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div id="ordersTable"><div class="news-empty">Загрузка…</div></div>
+    </div>
+  </div>
+
+  <div id="tab-archive" class="tab hidden">
+    <div class="section-title">Архив заказов</div>
+    <div id="archiveList"><div class="news-empty">Загрузка…</div></div>
+  </div>
+
+  <div id="tab-themes" class="tab hidden">
+    <div class="card">
+      <div class="section-title">Выбери тему оформления</div>
+      <div class="chip-row" style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="theme-swatch" data-theme="blue" style="background:linear-gradient(160deg,#d7f8ff,#2fb3dd); width:64px; height:64px; border-radius:16px; border:2px solid transparent; cursor:pointer;"></button>
+        <button class="theme-swatch" data-theme="emerald" style="background:linear-gradient(160deg,#baffdf,#0f8f5c); width:64px; height:64px; border-radius:16px; border:2px solid transparent; cursor:pointer;"></button>
+        <button class="theme-swatch" data-theme="purple" style="background:linear-gradient(160deg,#ead9ff,#7c3aed); width:64px; height:64px; border-radius:16px; border:2px solid transparent; cursor:pointer;"></button>
+        <button class="theme-swatch" data-theme="red" style="background:linear-gradient(160deg,#ffb0b8,#a01f34); width:64px; height:64px; border-radius:16px; border:2px solid transparent; cursor:pointer;"></button>
+        <button class="theme-swatch" data-theme="gold" style="background:linear-gradient(160deg,#ffe9a8,#b8860b); width:64px; height:64px; border-radius:16px; border:2px solid transparent; cursor:pointer;"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-tasks" class="tab hidden">
+    <div class="section-title">Задания
+      <button id="addTaskBtn" class="hidden">+ Задание</button>
+    </div>
+    <div id="tasksList"><div class="news-empty">Загрузка…</div></div>
+    <div id="taskSubmitBar" class="hidden" style="position:sticky; bottom:12px; margin-top:12px;">
+      <button class="action" id="submitTasksBtn" style="margin:0;">Отправить выбранные на проверку</button>
+    </div>
+
+    <div id="taskReviewSection" class="hidden" style="margin-top:26px;">
+      <div class="section-title">Проверка заданий</div>
+      <div id="taskReviewList"><div class="news-empty">Загрузка…</div></div>
+    </div>
+  </div>
+
+  <div id="tab-admin" class="tab hidden">
+    <div id="adminGate" class="card">
+      <h2 style="margin-top:0;">🔑 Ключ владельца</h2>
+      <p class="muted" style="font-size:12.5px;">Без него ничего из функций TECH не будет работать на всём сайте.</p>
+      <input id="ownerKeyInput" type="password" placeholder="Введи ключ">
+      <button class="action" id="ownerUnlockBtn">Войти</button>
+      <div id="ownerGateErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    </div>
+    <div id="adminPanel" class="hidden">
+      <div class="card">
+        <div class="section-title">Создать аккаунт</div>
+        <label>Ник</label><input id="createNick" maxlength="40">
+        <label>Роль</label>
+        <select id="createRole"><option value="USER">USER</option><option value="TECH">TECH</option></select>
+        <button class="action" id="createAccBtn">Создать</button>
+        <div id="createAccOut" class="muted" style="margin-top:8px; white-space:pre-wrap;"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Все аккаунты</div>
+        <div id="adminUsersList"><div class="news-empty">Загрузка…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-logs" class="tab hidden">
+    <div id="logsGateMsg" class="card">Сначала зайди в «Панель» и введи ключ владельца.</div>
+    <div id="logsPanel" class="hidden card">
+      <div class="section-title">Экспорт логов</div>
+      <label>С даты</label><input id="logsFrom" type="date">
+      <label>По дату</label><input id="logsTo" type="date">
+      <button class="action" id="logsDownloadBtn">Загрузить HTML</button>
+      <div id="logsErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="loginModal" class="modal-bg">
+  <div class="modal">
+    <h2>Вход</h2>
+    <label>Ник</label><input id="loginNick" type="text" placeholder="Твой ник">
+    <label>ID (25 цифр)</label><input id="loginId" type="text" inputmode="numeric" placeholder="Выданный владельцем ID">
+    <div id="err"></div>
+    <button class="action" id="loginBtn">Войти</button>
+  </div>
+</div>
+
+<div id="newsModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2>Новая новость</h2>
+    <label>Заголовок</label><input id="newsTitle" maxlength="200">
+    <label>Текст</label><textarea id="newsBody" maxlength="5000"></textarea>
+    <label>Шрифт</label>
+    <select id="newsFont">
+      <option value="default">Обычный</option>
+      <option value="bold">Жирный</option>
+      <option value="mono">Моноширинный</option>
+    </select>
+    <label>Тег</label>
+    <div class="tag-choice" id="tagChoice"></div>
+    <label>Фото (необязательно)</label>
+    <input id="newsImage" type="file" accept="image/jpeg,image/png,image/webp">
+    <div id="newsErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="newsSubmitBtn">Опубликовать</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="newsCancelBtn">Отмена</button>
+  </div>
+</div>
+
+<div id="productModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2 id="productModalTitle">Новый товар</h2>
+    <input type="hidden" id="productId">
+    <label>Название</label><input id="productName" maxlength="120">
+    <label>Цена (🪙)</label><input id="productPrice" type="number" min="1">
+    <label>Описание</label><textarea id="productDesc" maxlength="2000"></textarea>
+    <label>Фото</label><input id="productImage" type="file" accept="image/jpeg,image/png,image/webp">
+    <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="productLimited" style="width:auto;"> Ограниченное количество</label>
+    <div id="productStockWrap" class="hidden"><label>Доступно штук</label><input id="productStock" type="number" min="0"></div>
+    <div id="productErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="productSubmitBtn">Сохранить</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="productCancelBtn">Отмена</button>
+  </div>
+</div>
+
+<div id="sectionModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2 id="sectionModalTitle">Новый раздел</h2>
+    <input type="hidden" id="sectionId">
+    <label>Название раздела</label><input id="sectionName" maxlength="80">
+    <label>Товары в разделе</label>
+    <div id="sectionProductList" style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:10px; padding:8px; margin-top:4px;"></div>
+    <div id="sectionErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="sectionSubmitBtn">Сохранить</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="sectionCancelBtn">Отмена</button>
+  </div>
+</div>
+
+<div class="cart-fab hidden" id="cartFab"><svg viewBox="0 0 24 24" stroke-width="1.7"><path d="M4 6h2l2 11h11l1.5-8H7"/><circle cx="10" cy="20" r="1.4" fill="var(--accent-bright)" stroke="none"/><circle cx="17" cy="20" r="1.4" fill="var(--accent-bright)" stroke="none"/></svg><span class="cart-badge hidden" id="cartBadge">0</span></div>
+<div id="cartModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2>Корзина</h2>
+    <div id="cartItems"></div>
+    <div style="display:flex; justify-content:space-between; margin-top:12px; font-weight:800;">
+      <span>Итого</span><span id="cartTotal">0 🪙</span>
+    </div>
+    <div id="cartErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="checkoutBtn">Заказать</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="cartCloseBtn">Закрыть</button>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2 id="confirmText">Точно?</h2>
+    <div class="confirm-actions">
+      <button class="action" id="confirmYes">Да</button>
+      <button class="ghost-small" id="confirmNo">Нет</button>
+    </div>
+  </div>
+</div>
+
+<div id="rejectModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2>Причина отказа</h2>
+    <textarea id="rejectReason" maxlength="500" placeholder="Например: нет нужного размера"></textarea>
+    <div id="rejectErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="rejectSubmitBtn">Отклонить заказ</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="rejectCancelBtn">Отмена</button>
+  </div>
+</div>
+
+<div id="taskCreateModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2>Новое задание</h2>
+    <label>Название</label><input id="taskTitle" maxlength="150">
+    <label>Описание</label><textarea id="taskDesc" maxlength="2000"></textarea>
+    <label>Фото-карточка (необязательно)</label><input id="taskImage" type="file" accept="image/jpeg,image/png,image/webp">
+    <label>Награда (🪙)</label><input id="taskReward" type="number" min="1">
+    <div id="taskCreateErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="taskCreateSubmitBtn">Создать</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="taskCreateCancelBtn">Отмена</button>
+  </div>
+</div>
+
+<div id="taskSubmitModal" class="modal-bg hidden">
+  <div class="modal">
+    <h2>Отправить на проверку</h2>
+    <div id="taskSubmitList"></div>
+    <div id="taskSubmitErr" style="color:var(--danger); font-size:12.5px; margin-top:6px;"></div>
+    <button class="action" id="taskSubmitConfirmBtn">Отправить</button>
+    <button class="ghost-small" style="width:100%; margin-top:8px;" id="taskSubmitCancelBtn">Отмена</button>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://milky-api.YOUR-SUBDOMAIN.workers.dev'; // ЗАМЕНИ на свой адрес Worker'а
+
+  // ============================================================
+  // Падающий снег — canvas, лёгкий, без картинок
+  // ============================================================
+  (function snow(){
+    const canvas = document.getElementById('snowCanvas'); const ctx = canvas.getContext('2d');
+    let w, h, flakes = [];
+    function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
+    const N = Math.min(70, Math.floor((innerWidth*innerHeight)/22000));
+    for(let i=0;i<N;i++){
+      flakes.push({
+        x:Math.random()*w, y:Math.random()*h, r:1+Math.random()*2.6,
+        vy:0.4+Math.random()*0.9, drift:Math.random()*Math.PI*2, driftSpeed:0.006+Math.random()*0.01,
+        a:0.25+Math.random()*0.45,
+      });
+    }
+    function frame(){
+      ctx.clearRect(0,0,w,h);
+      for(const f of flakes){
+        f.y += f.vy; f.drift += f.driftSpeed; f.x += Math.sin(f.drift)*0.4;
+        if (f.y > h+6){ f.y=-6; f.x=Math.random()*w; }
+        if (f.x < -6) f.x = w+6; if (f.x > w+6) f.x = -6;
+        ctx.beginPath(); ctx.fillStyle = `rgba(235,248,255,${f.a})`;
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    frame();
+  })();
+
+  // ---- Ряд сосулек под шапкой ----
+  (function buildIcicles(){
+    const row = document.getElementById('icicleRow');
+    const count = Math.ceil(innerWidth / 30);
+    let html = '';
+    for (let i=0;i<count;i++){
+      const hgt = 7 + Math.round(Math.random()*9);
+      html += `<div style="width:24px;height:${hgt}px;flex:none;background:linear-gradient(180deg, var(--accent-bright), var(--accent) 70%, transparent);
+        clip-path:polygon(15% 0,85% 0,50% 100%); opacity:.5;"></div>`;
+    }
+    row.innerHTML = html;
+  })();
+  const $ = (s) => document.querySelector(s);
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  const NEWS_TAGS = {
+    'Новое': '#3ce8a0', 'Обновление': '#6fe3ff', 'Информация': '#f5c451',
+    'Технические работы': '#ff9f4a', 'Конкурс': '#c77dff',
+  };
+
+  async function api(path, opts = {}) {
+    const res = await fetch(API_BASE + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка запроса');
+    return data;
+  }
+
+  let me = null;
+  let ownerKey = sessionStorage.getItem('milky_owner_key') || '';
+
+  function applyTheme(color){ document.documentElement.setAttribute('data-theme', color || 'blue'); }
+
+  // ============================================================
+  // Пересборка фото пиксель-в-пиксель перед отправкой на сервер.
+  // Рисуем файл на canvas и сохраняем заново — в результате
+  // остаются только пиксели, любые скрипты/мусор/скам стираются.
+  // Заодно: если файл не настоящая картинка, <img> просто не
+  // сможет её декодировать — ничего не выполнится.
+  // ============================================================
+  function sanitizeImage(file){
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        canvas.toBlob(blob => {
+          URL.revokeObjectURL(url);
+          blob ? resolve(blob) : reject(new Error('Не удалось обработать изображение'));
+        }, 'image/png');
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Файл повреждён или это не изображение')); };
+      img.src = url;
+    });
+  }
+
+  function renderProfile(u){
+    $('#welcomeNick').textContent = u.nickname;
+    $('#chipNick').textContent = u.nickname;
+    $('#chipAvatar').textContent = (u.nickname[0] || '?').toUpperCase();
+    $('#profileChip').classList.remove('hidden');
+    $('#rolePill').textContent = u.role;
+    applyTheme(u.theme_color);
+    if (u.role === 'TECH') { $('#navAdmin').classList.remove('hidden'); $('#navLogs').classList.remove('hidden'); }
+    if (ownerKey) { $('#addNewsBtn').classList.remove('hidden'); $('#addProductBtn').classList.remove('hidden'); $('#addSectionBtn').classList.remove('hidden'); }
+    $('#notifBell').classList.remove('hidden');
+    renderCartBadge();
+  }
+
+  // ============================================================
+  // ЛИЧНЫЕ УВЕДОМЛЕНИЯ (одобрение/отказ заказов)
+  // ============================================================
+  let lastSeenNotifTime = Number(localStorage.getItem('milky_notif_seen') || 0);
+  async function loadNotifications(){
+    if (!me) return;
+    try{
+      const list = await api('/api/notifications?id=' + me.id);
+      const unread = list.filter(n => n.created_at > lastSeenNotifTime).length;
+      $('#notifBadge').textContent = unread;
+      $('#notifBadge').classList.toggle('hidden', unread === 0);
+      $('#notifPanel').innerHTML = list.length ? list.map(n => `
+        <div style="padding:9px 4px; border-bottom:1px solid var(--border); font-size:12.5px;">
+          <div style="font-weight:700;">${esc(n.title)}</div>
+          <div style="color:var(--muted); margin-top:2px;">${esc(n.body)}</div>
+          <div style="color:var(--muted); font-size:10.5px; margin-top:3px;">${new Date(n.created_at).toLocaleString('ru-RU')}</div>
+        </div>`).join('') : '<div class="news-empty">Пока пусто</div>';
+    }catch(e){}
+  }
+  $('#notifBell').addEventListener('click', () => {
+    const panel = $('#notifPanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+      lastSeenNotifTime = Date.now();
+      localStorage.setItem('milky_notif_seen', lastSeenNotifTime);
+      $('#notifBadge').classList.add('hidden');
+    }
+  });
+  setInterval(loadNotifications, 20000);
+
+  document.querySelectorAll('#nav button[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#nav button[data-tab]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
+      $('#tab-'+btn.dataset.tab).classList.remove('hidden');
+    });
+  });
+
+  $('#logoutBtn').addEventListener('click', ()=>{
+    localStorage.removeItem('milky_id'); localStorage.removeItem('milky_nick');
+    sessionStorage.removeItem('milky_owner_key');
+    location.reload();
+  });
+
+  $('#loginBtn').addEventListener('click', async ()=>{
+    const nickname = $('#loginNick').value.trim(), id = $('#loginId').value.trim();
+    $('#err').textContent = '';
+    try{
+      const u = await api('/api/login', { method:'POST', body: JSON.stringify({ nickname, id }) });
+      me = u;
+      localStorage.setItem('milky_id', id); localStorage.setItem('milky_nick', nickname);
+      $('#loginModal').classList.add('hidden');
+      renderProfile(u);
+      loadNews(); loadTeam(); loadTasks(); loadNotifications();
+    }catch(e){ $('#err').textContent = e.message; }
+  });
+
+  // ---- Новости ----
+  function renderNews(list){
+    if (!list.length) { $('#newsList').innerHTML = '<div class="news-empty">Обновлений пока нет</div>'; return; }
+    $('#newsList').innerHTML = list.map(n => {
+      const color = NEWS_TAGS[n.tag] || '#6fe3ff';
+      const fontStyle = n.font === 'bold' ? 'font-weight:800;' : (n.font === 'mono' ? "font-family:monospace;" : '');
+      const img = n.image_key ? `<img src="${API_BASE}/api/image/${encodeURIComponent(n.image_key)}" loading="lazy">` : '';
+      return `<div class="news-item">
+        <span class="tag-pill" style="background-image:linear-gradient(100deg, ${color}, #fff8, ${color});">${esc(n.tag)}</span>
+        <div class="news-title" style="${fontStyle}">${esc(n.title)}</div>
+        <div class="news-body" style="${fontStyle}">${esc(n.body)}</div>
+        ${img}
+      </div>`;
+    }).join('');
+  }
+  async function loadNews(){ try{ renderNews(await api('/api/news')); }catch(e){ $('#newsList').innerHTML = '<div class="news-empty">Ошибка загрузки</div>'; } }
+
+  async function loadTeam(){
+    try{
+      const list = await api('/api/tech-team');
+      $('#techList').innerHTML = list.length ? list.map(t => `
+        <div class="tech-card">
+          <div class="tech-avatar">${esc(t.nickname[0]?.toUpperCase() || '?')}</div>
+          <div><div class="tech-name">${esc(t.nickname)}</div><span class="tech-badge">TECH</span></div>
+        </div>`).join('') : '<div class="news-empty">Пока никого нет</div>';
+    }catch(e){ $('#techList').innerHTML = '<div class="news-empty">Ошибка загрузки</div>'; }
+  }
+
+  // ---- Owner unlock (временно, до полноценной админ-панели на этапе 7) ----
+  $('#addNewsBtn').addEventListener('click', () => { $('#newsModal').classList.remove('hidden'); renderTagChoice(); });
+  $('#newsCancelBtn').addEventListener('click', () => $('#newsModal').classList.add('hidden'));
+  function renderTagChoice(){
+    const el = $('#tagChoice'); let selected = Object.keys(NEWS_TAGS)[0];
+    el.innerHTML = Object.entries(NEWS_TAGS).map(([tag,color])=>`<button type="button" data-tag="${tag}" style="background:${color};">${tag}</button>`).join('');
+    el.querySelectorAll('button').forEach((b,i)=>{
+      if(i===0) b.classList.add('selected');
+      b.addEventListener('click', ()=>{ el.querySelectorAll('button').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); selected=b.dataset.tag; });
+    });
+    el.dataset.getSelected = 'true';
+    el._getSelected = () => selected;
+  }
+  $('#newsSubmitBtn').addEventListener('click', async () => {
+    $('#newsErr').textContent = '';
+    try{
+      let imageKey = null;
+      const file = $('#newsImage').files[0];
+      if (file) {
+        const res = await fetch(API_BASE + '/api/upload-image', { method:'POST', body: await sanitizeImage(file) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        imageKey = data.key;
+      }
+      const tag = $('#tagChoice')._getSelected ? $('#tagChoice')._getSelected() : Object.keys(NEWS_TAGS)[0];
+      await api('/admin/news/create', {
+        method: 'POST',
+        headers: { 'x-owner-key': ownerKey },
+        body: JSON.stringify({ title: $('#newsTitle').value, body: $('#newsBody').value, font: $('#newsFont').value, tag, image_key: imageKey }),
+      });
+      $('#newsModal').classList.add('hidden');
+      $('#newsTitle').value=''; $('#newsBody').value=''; $('#newsImage').value='';
+      loadNews();
+    }catch(e){ $('#newsErr').textContent = e.message; }
+  });
+
+  // ---- Темы ----
+  document.querySelectorAll('.theme-swatch').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      applyTheme(btn.dataset.theme);
+      if (me) { try{ await api('/api/set-theme', { method:'POST', body: JSON.stringify({ id: me.id, theme_color: btn.dataset.theme }) }); }catch(e){} }
+    });
+  });
+
+  // ============================================================
+  // МАГАЗИН
+  // ============================================================
+  let shopData = { sections: [], products: [] };
+  let cart = JSON.parse(localStorage.getItem('milky_cart') || '[]');
+
+  function saveCart(){ localStorage.setItem('milky_cart', JSON.stringify(cart)); renderCartBadge(); }
+  function renderCartBadge(){
+    const count = cart.reduce((s,i)=>s+i.qty,0);
+    $('#cartBadge').textContent = count;
+    $('#cartBadge').classList.toggle('hidden', count===0);
+    $('#cartFab').classList.toggle('hidden', !me);
+  }
+
+  function productCardHtml(p){
+    const outOfStock = p.stock_limited && p.stock_count <= 0;
+    const img = p.image_key ? `<img src="${API_BASE}/api/image/${encodeURIComponent(p.image_key)}" loading="lazy">` : `<div style="aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.05);"></div>`;
+    return `<div class="product-card" data-id="${p.id}">
+      ${img}
+      ${outOfStock ? '<div class="product-out">Нет в наличии</div>' : ''}
+      <div class="product-name">${esc(p.name)}</div>
+      <div class="product-price">${p.price} 🪙</div>
+      <div class="product-desc">${esc(p.description||'')}</div>
+      <div class="product-actions">
+        <button class="btn-mini btn-cart" ${outOfStock?'disabled':''} onclick="addToCart(${p.id})">В корзину</button>
+        <button class="btn-icon owner-only hidden" onclick="openProductModal(${p.id})">✎</button>
+        <button class="btn-icon owner-only hidden" onclick="deleteProduct(${p.id})">✕</button>
+      </div>
+    </div>`;
+  }
+
+  function renderShop(){
+    const byId = Object.fromEntries(shopData.products.map(p=>[p.id,p]));
+    let html = '';
+    for (const sec of shopData.sections) {
+      const items = shopData.products.filter(p=>p.section_id===sec.id);
+      html += `<div class="section-divider">${esc(sec.name)}
+        <button class="btn-icon owner-only hidden" style="flex:none;" onclick="openSectionModal(${sec.id})">✎</button>
+        <button class="btn-icon owner-only hidden" style="flex:none;" onclick="deleteSection(${sec.id})">✕</button>
+      </div><div class="product-grid">${items.map(productCardHtml).join('') || '<div class="news-empty">Пусто</div>'}</div>`;
+    }
+    const rest = shopData.products.filter(p=>!p.section_id);
+    if (shopData.sections.length) html += `<div class="section-divider">Остальные товары</div>`;
+    html += `<div class="product-grid">${rest.map(productCardHtml).join('') || '<div class="news-empty">Товаров пока нет</div>'}</div>`;
+    $('#shopContent').innerHTML = html;
+    if (ownerKey) document.querySelectorAll('.owner-only').forEach(el=>el.classList.remove('hidden'));
+  }
+
+  async function loadShop(){
+    try{ shopData = await api('/api/shop'); renderShop(); }
+    catch(e){ $('#shopContent').innerHTML = '<div class="news-empty">Ошибка загрузки</div>'; }
+  }
+
+  window.addToCart = (productId) => {
+    if (!me) return alert('Сначала войди');
+    const p = shopData.products.find(x=>x.id===productId);
+    if (!p) return;
+    const existing = cart.find(i=>i.product_id===productId);
+    const currentQty = existing ? existing.qty : 0;
+    if (p.stock_limited && currentQty + 1 > p.stock_count) return alert('Больше нет в наличии');
+    if (existing) existing.qty++; else cart.push({ product_id: productId, qty: 1 });
+    saveCart();
+  };
+
+  function renderCart(){
+    if (!cart.length) { $('#cartItems').innerHTML = '<div class="news-empty">Корзина пуста</div>'; $('#cartTotal').textContent = '0 🪙'; return; }
+    let total = 0;
+    $('#cartItems').innerHTML = cart.map(item => {
+      const p = shopData.products.find(x=>x.id===item.product_id);
+      if (!p) return '';
+      total += p.price * item.qty;
+      return `<div class="cart-item">
+        <span style="flex:1;">${esc(p.name)}</span>
+        <div class="qty-ctrl">
+          <button onclick="changeCartQty(${item.product_id}, -1)">−</button>
+          <span>${item.qty}</span>
+          <button onclick="changeCartQty(${item.product_id}, 1)">+</button>
+        </div>
+        <span>${p.price * item.qty} 🪙</span>
+        <button class="btn-icon" onclick="removeFromCart(${item.product_id})">✕</button>
+      </div>`;
+    }).join('');
+    $('#cartTotal').textContent = total + ' 🪙';
+  }
+  window.changeCartQty = (productId, delta) => {
+    const item = cart.find(i=>i.product_id===productId);
+    const p = shopData.products.find(x=>x.id===productId);
+    if (!item || !p) return;
+    const newQty = item.qty + delta;
+    if (newQty <= 0) { cart = cart.filter(i=>i.product_id!==productId); }
+    else if (p.stock_limited && newQty > p.stock_count) { return; }
+    else { item.qty = newQty; }
+    saveCart(); renderCart();
+  };
+  window.removeFromCart = (productId) => { cart = cart.filter(i=>i.product_id!==productId); saveCart(); renderCart(); };
+
+  $('#cartFab').addEventListener('click', () => { renderCart(); $('#cartModal').classList.remove('hidden'); });
+  $('#cartCloseBtn').addEventListener('click', () => $('#cartModal').classList.add('hidden'));
+  $('#checkoutBtn').addEventListener('click', async () => {
+    if (!cart.length) return;
+    $('#cartErr').textContent = '';
+    try{
+      await api('/api/orders/create', { method:'POST', body: JSON.stringify({ id: me.id, items: cart }) });
+      cart = []; saveCart();
+      $('#cartModal').classList.add('hidden');
+      alert('Заказ отправлен на проверку!');
+      loadShop(); loadOrders();
+    }catch(e){ $('#cartErr').textContent = e.message; }
+  });
+
+  // ---- Управление товарами (владелец) ----
+  $('#addProductBtn').addEventListener('click', () => openProductModal(null));
+  window.openProductModal = (id) => {
+    const p = id ? shopData.products.find(x=>x.id===id) : null;
+    $('#productModalTitle').textContent = p ? 'Изменить товар' : 'Новый товар';
+    $('#productId').value = id || '';
+    $('#productName').value = p?.name || '';
+    $('#productPrice').value = p?.price || '';
+    $('#productDesc').value = p?.description || '';
+    $('#productLimited').checked = !!p?.stock_limited;
+    $('#productStock').value = p?.stock_count ?? '';
+    $('#productStockWrap').classList.toggle('hidden', !p?.stock_limited);
+    $('#productErr').textContent = '';
+    $('#productModal').classList.remove('hidden');
+  };
+  $('#productLimited').addEventListener('change', (e) => $('#productStockWrap').classList.toggle('hidden', !e.target.checked));
+  $('#productCancelBtn').addEventListener('click', () => $('#productModal').classList.add('hidden'));
+  $('#productSubmitBtn').addEventListener('click', async () => {
+    $('#productErr').textContent = '';
+    try{
+      let imageKey = null;
+      const file = $('#productImage').files[0];
+      if (file) {
+        const res = await fetch(API_BASE + '/api/upload-image', { method:'POST', body: await sanitizeImage(file) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        imageKey = data.key;
+      }
+      const id = $('#productId').value;
+      const payload = {
+        name: $('#productName').value, price: Number($('#productPrice').value), description: $('#productDesc').value,
+        image_key: imageKey, stock_limited: $('#productLimited').checked, stock_count: Number($('#productStock').value || 0),
+      };
+      if (id) { payload.id = Number(id); if(!imageKey) delete payload.image_key; await api('/admin/products/edit', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify(payload) }); }
+      else await api('/admin/products/create', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify(payload) });
+      $('#productModal').classList.add('hidden'); loadShop();
+    }catch(e){ $('#productErr').textContent = e.message; }
+  });
+  window.deleteProduct = async (id) => {
+    if (!confirm('Удалить товар?')) return;
+    try{ await api('/admin/products/delete', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id}) }); loadShop(); }
+    catch(e){ alert(e.message); }
+  };
+
+  // ---- Управление разделами (владелец) ----
+  $('#addSectionBtn').addEventListener('click', () => openSectionModal(null));
+  window.openSectionModal = (id) => {
+    const sec = id ? shopData.sections.find(x=>x.id===id) : null;
+    $('#sectionModalTitle').textContent = sec ? 'Изменить раздел' : 'Новый раздел';
+    $('#sectionId').value = id || '';
+    $('#sectionName').value = sec?.name || '';
+    const available = shopData.products.filter(p => !p.section_id || p.section_id === id);
+    $('#sectionProductList').innerHTML = available.map(p => `
+      <label style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+        <input type="checkbox" value="${p.id}" ${p.section_id===id?'checked':''} style="width:auto;"> ${esc(p.name)}
+      </label>`).join('') || '<div class="news-empty">Нет доступных товаров</div>';
+    $('#sectionErr').textContent = '';
+    $('#sectionModal').classList.remove('hidden');
+  };
+  $('#sectionCancelBtn').addEventListener('click', () => $('#sectionModal').classList.add('hidden'));
+  $('#sectionSubmitBtn').addEventListener('click', async () => {
+    $('#sectionErr').textContent = '';
+    const id = $('#sectionId').value;
+    const product_ids = [...document.querySelectorAll('#sectionProductList input:checked')].map(i=>Number(i.value));
+    try{
+      if (id) await api('/admin/sections/edit', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({ id:Number(id), name: $('#sectionName').value, product_ids }) });
+      else await api('/admin/sections/create', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({ name: $('#sectionName').value, product_ids }) });
+      $('#sectionModal').classList.add('hidden'); loadShop();
+    }catch(e){ $('#sectionErr').textContent = e.message; }
+  });
+  window.deleteSection = async (id) => {
+    if (!confirm('Удалить раздел? Товары останутся, просто станут без раздела.')) return;
+    try{ await api('/admin/sections/delete', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id}) }); loadShop(); }
+    catch(e){ alert(e.message); }
+  };
+
+  // ============================================================
+  // ЗАКАЗЫ
+  // ============================================================
+  function statusLabel(s){ return { pending:'Ожидает проверки', approved:'Одобрено', rejected:'Отказано' }[s] || s; }
+  async function loadOrders(){
+    try{
+      const list = await api('/api/orders');
+      if (!list.length) { $('#ordersTable').innerHTML = '<div class="news-empty">Заказов пока нет</div>'; return; }
+      $('#ordersTable').innerHTML = `<table class="data-table"><thead><tr><th>Ник</th><th>Товаров</th><th>Дата</th><th>Статус</th></tr></thead><tbody>
+        ${list.map(o => `<tr onclick="location.hash='#tab-archive'; document.querySelector('#nav button[data-tab=archive]').click(); openArchiveDetail(${o.id});">
+          <td>${esc(o.nickname)}</td><td>${o.total_items}</td><td>${new Date(o.created_at).toLocaleString('ru-RU')}</td>
+          <td><span class="status-pill status-${o.status}">${statusLabel(o.status)}</span></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    }catch(e){ $('#ordersTable').innerHTML = '<div class="news-empty">Ошибка загрузки</div>'; }
+  }
+
+  // ============================================================
+  // АРХИВ
+  // ============================================================
+  let archiveOrders = [];
+  async function loadArchive(){
+    try{
+      archiveOrders = await api('/api/orders');
+      if (!archiveOrders.length) { $('#archiveList').innerHTML = '<div class="news-empty">Пусто</div>'; return; }
+      $('#archiveList').innerHTML = archiveOrders.map(o => `
+        <div class="archive-card" onclick="openArchiveDetail(${o.id})">
+          <div style="display:flex; justify-content:space-between;">
+            <b>${esc(o.nickname)}</b><span class="status-pill status-${o.status}">${statusLabel(o.status)}</span>
+          </div>
+          <div class="muted" style="font-size:12px; margin-top:4px;">${o.total_items} товаров · ${new Date(o.created_at).toLocaleString('ru-RU')}</div>
+        </div>`).join('');
+    }catch(e){ $('#archiveList').innerHTML = '<div class="news-empty">Ошибка загрузки</div>'; }
+  }
+  window.openArchiveDetail = async (orderId) => {
+    try{
+      const o = await api('/api/orders/detail?id=' + orderId + '&viewer_id=' + encodeURIComponent(me?.id || ''));
+      if (!o.items) {
+        $('#confirmText').innerHTML = `<div style="text-align:left;"><h3 style="margin-top:0;">Заказ №${o.id} — ${esc(o.nickname)}</h3>
+          <div class="muted" style="font-size:12px;">${new Date(o.created_at).toLocaleString('ru-RU')}</div>
+          <div class="row"><span>Товаров</span><span>${o.total_items}</span></div>
+          <div class="muted" style="margin-top:10px;">Детали заказа видны только покупателю и владельцу.</div></div>`;
+        $('#confirmYes').classList.add('hidden'); $('#confirmNo').textContent='Закрыть';
+        $('#confirmModal').classList.remove('hidden');
+        return;
+      }
+      const itemsHtml = o.items.map(i => `<div class="row"><span>${esc(i.name)} × ${i.qty}</span><span>${i.price*i.qty} 🪙</span></div>`).join('');
+      const isOwnerView = !!ownerKey;
+      const actions = isOwnerView && o.status === 'pending' ? `
+        <button class="action" onclick="approveOrder(${o.id})">Одобрить</button>
+        <button class="action" style="background:linear-gradient(160deg,#ffb0b8,var(--danger) 60%,#a01f34);" onclick="openRejectModal(${o.id})">Отклонить</button>` : '';
+      const deliverBtn = isOwnerView && o.status === 'approved' ? `<button class="action" onclick="confirmDeliver(${o.id})">Выдано</button>` : '';
+      const rejectInfo = o.status === 'rejected' ? `<div class="muted" style="margin-top:8px;">Причина: ${esc(o.reject_reason||'')}</div>` : '';
+      $('#confirmText').innerHTML = `<div style="text-align:left;"><h3 style="margin-top:0;">Заказ №${o.id} — ${esc(o.nickname)}</h3>
+        <div class="muted" style="font-size:12px;">${new Date(o.created_at).toLocaleString('ru-RU')}</div>
+        <div style="margin:10px 0;">${itemsHtml}</div>
+        <div class="row"><b>Итого</b><b>${o.total_cost} 🪙</b></div>
+        ${rejectInfo}${actions}${deliverBtn}</div>`;
+      $('#confirmYes').classList.add('hidden'); $('#confirmNo').textContent='Закрыть';
+      $('#confirmModal').classList.remove('hidden');
+    }catch(e){ alert(e.message); }
+  };
+  window.approveOrder = async (id) => {
+    try{ await api('/admin/orders/approve', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id}) });
+      $('#confirmModal').classList.add('hidden'); loadOrders(); loadArchive();
+    }catch(e){ alert(e.message); }
+  };
+  window.openRejectModal = (id) => { $('#rejectModal').dataset.orderId = id; $('#rejectReason').value=''; $('#rejectErr').textContent=''; $('#rejectModal').classList.remove('hidden'); };
+  $('#rejectCancelBtn').addEventListener('click', () => $('#rejectModal').classList.add('hidden'));
+  $('#rejectSubmitBtn').addEventListener('click', async () => {
+    const id = Number($('#rejectModal').dataset.orderId);
+    try{
+      await api('/admin/orders/reject', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({ id, reason: $('#rejectReason').value }) });
+      $('#rejectModal').classList.add('hidden'); $('#confirmModal').classList.add('hidden'); loadOrders(); loadArchive();
+    }catch(e){ $('#rejectErr').textContent = e.message; }
+  });
+  window.confirmDeliver = (id) => {
+    $('#confirmModal').classList.add('hidden');
+    $('#confirmText').textContent = 'Отметить заказ как выданный?';
+    $('#confirmYes').classList.remove('hidden'); $('#confirmNo').textContent = 'Нет';
+    document.getElementById('confirmYes').onclick = async () => {
+      try{ await api('/admin/orders/deliver', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id}) });
+        $('#confirmModal').classList.add('hidden'); loadOrders(); loadArchive();
+      }catch(e){ alert(e.message); }
+    };
+    $('#confirmModal').classList.remove('hidden');
+  };
+  $('#confirmNo').addEventListener('click', () => $('#confirmModal').classList.add('hidden'));
+
+  document.querySelectorAll('#nav button[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if (btn.dataset.tab==='shop') loadShop();
+      if (btn.dataset.tab==='orders') loadOrders();
+      if (btn.dataset.tab==='archive') loadArchive();
+    });
+  });
+
+  // ============================================================
+  // КЛЮЧ ВЛАДЕЛЬЦА — единая точка входа для всех TECH-функций сайта
+  // ============================================================
+  function unlockOwnerUI(){
+    document.querySelectorAll('.owner-only').forEach(el=>el.classList.remove('hidden'));
+    $('#addNewsBtn').classList.remove('hidden');
+    $('#addProductBtn').classList.remove('hidden');
+    $('#addSectionBtn').classList.remove('hidden');
+    $('#addTaskBtn').classList.remove('hidden');
+    $('#adminGate').classList.add('hidden');
+    $('#adminPanel').classList.remove('hidden');
+    $('#logsGateMsg').classList.add('hidden');
+    $('#logsPanel').classList.remove('hidden');
+    $('#taskReviewSection').classList.remove('hidden');
+  }
+  $('#ownerUnlockBtn').addEventListener('click', async () => {
+    const key = $('#ownerKeyInput').value;
+    $('#ownerGateErr').textContent = '';
+    try{
+      const res = await fetch(API_BASE + '/admin/users', { headers: { 'x-owner-key': key } });
+      if (!res.ok) throw new Error('Неверный ключ');
+      ownerKey = key; sessionStorage.setItem('milky_owner_key', key);
+      unlockOwnerUI(); loadAdminUsers(); loadTaskReview();
+    }catch(e){ $('#ownerGateErr').textContent = 'Неверный ключ'; }
+  });
+  if (ownerKey) unlockOwnerUI();
+
+  // ============================================================
+  // АДМИН-ПАНЕЛЬ
+  // ============================================================
+  $('#createAccBtn').addEventListener('click', async () => {
+    try{
+      const r = await api('/admin/create', { method:'POST', headers:{'x-owner-key':ownerKey},
+        body: JSON.stringify({ nickname: $('#createNick').value.trim(), role: $('#createRole').value }) });
+      $('#createAccOut').textContent = `Готово! Ник: ${r.nickname}\nID: ${r.id}\nРоль: ${r.role}`;
+      loadAdminUsers();
+    }catch(e){ $('#createAccOut').textContent = 'Ошибка: ' + e.message; }
+  });
+  async function loadAdminUsers(){
+    try{
+      const list = await api('/admin/users', { headers:{'x-owner-key':ownerKey} });
+      $('#adminUsersList').innerHTML = list.map(u => `
+        <div class="user-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+          <span>${esc(u.nickname)} ${u.role==='TECH'?'👑':''}<br><span class="muted" style="font-size:11px;">${u.balance} 🪙</span></span>
+          <span style="display:flex; gap:6px;">
+            <button class="btn-icon" onclick="giveCoins('${u.id}','${esc(u.nickname).replace(/'/g,"\\'")}')">＋</button>
+            <button class="btn-icon" onclick="deleteAcc('${u.id}','${esc(u.nickname).replace(/'/g,"\\'")}')">✕</button>
+          </span>
+        </div>`).join('') || '<div class="news-empty">Пока никого нет</div>';
+    }catch(e){ $('#adminUsersList').innerHTML = 'Ошибка: ' + e.message; }
+  }
+  window.giveCoins = async (id, nickname) => {
+    const amount = Number(prompt(`Сколько монет для «${nickname}»? (отрицательное — списать)`));
+    if (!amount) return;
+    try{ await api('/admin/give', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id, amount}) }); loadAdminUsers(); }
+    catch(e){ alert(e.message); }
+  };
+  window.deleteAcc = async (id, nickname) => {
+    if (!confirm(`Удалить аккаунт «${nickname}»?`)) return;
+    try{ await api('/admin/delete', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id}) }); loadAdminUsers(); }
+    catch(e){ alert(e.message); }
+  };
+
+  // ============================================================
+  // ЗАДАНИЯ
+  // ============================================================
+  let tasksData = [];
+  let selectedTaskIds = [];
+
+  function fmtCountdown(ms){
+    const h = String(Math.floor(ms/3600000)).padStart(2,'0');
+    const m = String(Math.floor((ms%3600000)/60000)).padStart(2,'0');
+    const s = String(Math.floor((ms%60000)/1000)).padStart(2,'0');
+    return `${h}:${m}:${s}`;
+  }
+  function taskCardHtml(t){
+    const img = t.image_key ? `<img src="${API_BASE}/api/image/${encodeURIComponent(t.image_key)}" loading="lazy">` : '';
+    let actionHtml = '';
+    if (t.state === 'available') actionHtml = `<label style="display:flex; gap:8px; align-items:center; margin-top:8px;"><input type="checkbox" class="task-check" data-id="${t.id}" style="width:auto;"> Выбрать для отправки</label>`;
+    else if (t.state === 'pending') actionHtml = `<div class="muted" style="margin-top:8px;">⏳ На проверке</div><button class="btn-mini" style="margin-top:6px; background:rgba(255,92,114,.15); color:var(--danger);" onclick="cancelTask(${t.submission_id})">Отменить</button>`;
+    else if (t.state === 'cooldown') actionHtml = `<div class="muted cooldown-text" data-until="${t.available_at}" style="margin-top:8px;">⏳ ${fmtCountdown(t.available_at - Date.now())}</div>`;
+    return `<div class="product-card">
+      ${img}
+      <div class="product-name">${esc(t.title)}</div>
+      <div class="product-desc">${esc(t.description||'')}</div>
+      <div class="product-price">Награда: ${t.reward} 🪙</div>
+      ${actionHtml}
+      <div class="product-actions owner-only hidden">
+        <button class="btn-icon" onclick="deleteTask(${t.id})">✕ удалить задание</button>
+      </div>
+    </div>`;
+  }
+  async function loadTasks(){
+    if (!me) return;
+    try{
+      tasksData = await api('/api/tasks?id=' + me.id);
+      $('#tasksList').innerHTML = `<div class="product-grid">${tasksData.map(taskCardHtml).join('') || '<div class="news-empty">Заданий пока нет</div>'}</div>`;
+      if (ownerKey) document.querySelectorAll('#tasksList .owner-only').forEach(el=>el.classList.remove('hidden'));
+      document.querySelectorAll('.task-check').forEach(cb => cb.addEventListener('change', updateTaskSelection));
+      updateTaskSelection();
+    }catch(e){ $('#tasksList').innerHTML = '<div class="news-empty">Ошибка загрузки</div>'; }
+  }
+  function updateTaskSelection(){
+    selectedTaskIds = [...document.querySelectorAll('.task-check:checked')].map(cb => Number(cb.dataset.id));
+    $('#taskSubmitBar').classList.toggle('hidden', selectedTaskIds.length === 0);
+    $('#submitTasksBtn').textContent = `Отправить выбранные (${selectedTaskIds.length}) на проверку`;
+  }
+  setInterval(() => {
+    document.querySelectorAll('.cooldown-text').forEach(el => {
+      const left = Number(el.dataset.until) - Date.now();
+      if (left <= 0) { loadTasks(); return; }
+      el.textContent = '⏳ ' + fmtCountdown(left);
+    });
+  }, 1000);
+
+  $('#submitTasksBtn').addEventListener('click', () => {
+    $('#taskSubmitList').innerHTML = selectedTaskIds.map(id => {
+      const t = tasksData.find(x=>x.id===id);
+      return `<div style="margin-bottom:14px;"><b>${esc(t.title)}</b>
+        <input type="file" class="task-photo-input" data-task-id="${id}" accept="image/jpeg,image/png,image/webp" multiple>
+        <div class="muted" style="font-size:11px;">До 5 фото</div></div>`;
+    }).join('');
+    $('#taskSubmitModal').classList.remove('hidden');
+  });
+  $('#taskSubmitCancelBtn').addEventListener('click', () => $('#taskSubmitModal').classList.add('hidden'));
+  $('#taskSubmitConfirmBtn').addEventListener('click', async () => {
+    $('#taskSubmitErr').textContent = '';
+    try{
+      const submissions = [];
+      for (const input of document.querySelectorAll('.task-photo-input')) {
+        const files = [...input.files].slice(0, 5);
+        const photos = [];
+        for (const f of files) {
+          const res = await fetch(API_BASE + '/api/upload-image', { method:'POST', body: await sanitizeImage(f) });
+          const data = await res.json();
+          if (res.ok) photos.push(data.key);
+        }
+        submissions.push({ task_id: Number(input.dataset.taskId), photos });
+      }
+      await api('/api/tasks/submit', { method:'POST', body: JSON.stringify({ id: me.id, submissions }) });
+      $('#taskSubmitModal').classList.add('hidden');
+      loadTasks();
+    }catch(e){ $('#taskSubmitErr').textContent = e.message; }
+  });
+  window.cancelTask = async (submissionId) => {
+    if (!confirm('Отменить отправку?')) return;
+    try{ await api('/api/tasks/cancel', { method:'POST', body: JSON.stringify({ id: me.id, submission_id: submissionId }) }); loadTasks(); }
+    catch(e){ alert(e.message); }
+  };
+  window.deleteTask = async (id) => {
+    if (!confirm('Удалить задание?')) return;
+    try{ await api('/admin/tasks/delete', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({id}) }); loadTasks(); }
+    catch(e){ alert(e.message); }
+  };
+
+  $('#addTaskBtn').addEventListener('click', () => { $('#taskCreateErr').textContent=''; $('#taskCreateModal').classList.remove('hidden'); });
+  $('#taskCreateCancelBtn').addEventListener('click', () => $('#taskCreateModal').classList.add('hidden'));
+  $('#taskCreateSubmitBtn').addEventListener('click', async () => {
+    $('#taskCreateErr').textContent = '';
+    try{
+      let imageKey = null;
+      const file = $('#taskImage').files[0];
+      if (file) {
+        const res = await fetch(API_BASE + '/api/upload-image', { method:'POST', body: await sanitizeImage(file) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        imageKey = data.key;
+      }
+      await api('/admin/tasks/create', { method:'POST', headers:{'x-owner-key':ownerKey},
+        body: JSON.stringify({ title: $('#taskTitle').value, description: $('#taskDesc').value, image_key: imageKey, reward: Number($('#taskReward').value) }) });
+      $('#taskCreateModal').classList.add('hidden'); loadTasks();
+    }catch(e){ $('#taskCreateErr').textContent = e.message; }
+  });
+
+  async function loadTaskReview(){
+    if (!ownerKey) return;
+    try{
+      const list = await api('/admin/tasks/pending', { headers:{'x-owner-key':ownerKey} });
+      $('#taskReviewList').innerHTML = list.length ? list.map(s => `
+        <div class="archive-card">
+          <b>${esc(s.nickname)}</b> — ${esc(s.title)} <span class="muted">(${s.reward} 🪙)</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin:8px 0;">
+            ${s.photos.map(k => `<img src="${API_BASE}/api/image/${encodeURIComponent(k)}" style="width:70px; height:70px; object-fit:cover; border-radius:8px;">`).join('') || '<span class="muted">Без фото</span>'}
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="action" style="margin:0;" onclick="approveTask(${s.id})">Одобрить</button>
+            <button class="action" style="margin:0; background:linear-gradient(160deg,#ffb0b8,var(--danger) 60%,#a01f34);" onclick="rejectTask(${s.id})">Отклонить</button>
+          </div>
+        </div>`).join('') : '<div class="news-empty">Нечего проверять</div>';
+    }catch(e){ $('#taskReviewList').innerHTML = 'Ошибка: ' + e.message; }
+  }
+  window.approveTask = async (id) => {
+    try{ await api('/admin/tasks/approve', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({submission_id:id}) }); loadTaskReview(); }
+    catch(e){ alert(e.message); }
+  };
+  window.rejectTask = async (id) => {
+    try{ await api('/admin/tasks/reject', { method:'POST', headers:{'x-owner-key':ownerKey}, body: JSON.stringify({submission_id:id}) }); loadTaskReview(); }
+    catch(e){ alert(e.message); }
+  };
+
+  document.querySelectorAll('#nav button[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if (btn.dataset.tab==='tasks') { loadTasks(); loadTaskReview(); }
+      if (btn.dataset.tab==='admin' && ownerKey) loadAdminUsers();
+    });
+  });
+
+  // ============================================================
+  // ЛОГИ
+  // ============================================================
+  $('#logsDownloadBtn').addEventListener('click', async () => {
+    $('#logsErr').textContent = '';
+    const fromStr = $('#logsFrom').value, toStr = $('#logsTo').value;
+    if (!fromStr || !toStr) { $('#logsErr').textContent = 'Укажи обе даты'; return; }
+    const from = new Date(fromStr + 'T00:00:00').getTime();
+    const to = new Date(toStr + 'T23:59:59').getTime();
+    try{
+      const rows = await api(`/admin/logs?from=${from}&to=${to}`, { headers:{'x-owner-key':ownerKey} });
+      const tableRows = rows.map(r => `<tr>
+        <td>${esc(r.nickname)}</td>
+        <td>${r.items.map(i=>esc(i.name)+' × '+i.qty).join(', ')}</td>
+        <td>${r.status==='approved'?'Одобрено':'Отказано'}</td>
+        <td>${new Date(r.status_changed_at).toLocaleString('ru-RU')}</td>
+        <td>${esc(r.reject_reason||'—')}</td>
+      </tr>`).join('');
+      const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Логи</title>
+        <style>body{font-family:Arial,sans-serif;background:#0b0d12;color:#eee;padding:24px;}
+        table{width:100%;border-collapse:collapse;} th,td{padding:8px 12px;border-bottom:1px solid #333;text-align:left;font-size:13px;}
+        th{color:#8a92a3;text-transform:uppercase;font-size:11px;}</style></head><body>
+        <h2>Список действий с ${fromStr} до ${toStr} включительно</h2>
+        <table><thead><tr><th>Ник</th><th>Заказ</th><th>Тег</th><th>Дата/время</th><th>Причина отказа</th></tr></thead>
+        <tbody>${tableRows || '<tr><td colspan="5">Пусто за этот период</td></tr>'}</tbody></table>
+        </body></html>`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `logs_${fromStr}_${toStr}.html`;
+      a.click();
+    }catch(e){ $('#logsErr').textContent = e.message; }
+  });
+
+  // ---- Автовход ----
+  (async ()=>{
+    const savedId = localStorage.getItem('milky_id'), savedNick = localStorage.getItem('milky_nick');
+    if (savedId && savedNick) {
+      try{ me = await api('/api/login', { method:'POST', body: JSON.stringify({ nickname: savedNick, id: savedId }) });
+        $('#loginModal').classList.add('hidden'); renderProfile(me); loadNews(); loadTeam(); loadTasks(); loadNotifications();
+      }catch(e){ $('#loginModal').classList.remove('hidden'); }
+    }
+  })();
+</script>
+
+</body>
+</html>
